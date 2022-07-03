@@ -1,5 +1,7 @@
 " Make sure ale is disabled so that CoC can do the work
+{{ if ne .chezmoi.arch "arm" }}
 let g:ale_disable_lsp = 1
+{{ end }}
 
 " -------------------
 " | Plugin settings |
@@ -27,7 +29,11 @@ Plug 'dense-analysis/ale'
 Plug 'vim-airline/vim-airline'
 Plug 'tpope/vim-surround'
 Plug 'jiangmiao/auto-pairs'     
+
+
+{{ if ne .chezmoi.arch "arm" }}
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
+{{ end }}
 
 " Git
 Plug 'Xuyuanp/nerdtree-git-plugin'
@@ -42,6 +48,7 @@ Plug 'alker0/chezmoi.vim'
 " Initialize plugin system
 call plug#end()
 
+{{ if ne .chezmoi.arch "arm" }}
 if isdirectory($HOME . "/.vim/plugged/coc.nvim")
     call coc#add_extension(
        \'coc-git',
@@ -55,6 +62,7 @@ if isdirectory($HOME . "/.vim/plugged/coc.nvim")
        \'coc-css',
      \)
 endif
+{{ end }}
 
 runtime macros/matchit.vim
 
@@ -216,6 +224,8 @@ let html_no_rendering=1
 " ----------------
 " | COC settings |
 " ----------------
+
+{{ if ne .chezmoi.arch "arm" }}
 
 let g:coc_disable_startup_warning = 1
 
@@ -386,3 +396,4 @@ nnoremap <silent><nowait> <space>k  :<C-u>CocPrev<CR>
 " Resume latest coc list.
 nnoremap <silent><nowait> <space>p  :<C-u>CocListResume<CR>
 
+{{ end }}
