@@ -25,3 +25,9 @@
     type = "git-repo"
     url = "https://github.com/alker0/chezmoi.vim.git"
     refreshPeriod = "168h"
+
+["bin/nvim"]
+    type = "file"
+    executable = true
+    url = "https://github.com/neovim/neovim/releases/download/v0.7.2/nvim.appimage"
+    exact = true
