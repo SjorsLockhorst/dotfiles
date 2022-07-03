@@ -36,6 +36,9 @@ Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'alvan/vim-closetag'
 Plug 'AndrewRadev/tagalong.vim'
 
+" Chezmoi
+Plug 'alker0/chezmoi.vim'
+
 " Initialize plugin system
 call plug#end()
 

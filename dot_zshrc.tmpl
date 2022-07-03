@@ -100,6 +100,11 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-{{ if eq .chezmoi.os "linux" -}}
+set -o vi
+
 alias open="xdg-open"
-{{ end -}}
+alias update='sudo apt-get update && sudo apt-get upgrade'
+alias sl=ls
+alias lsa='ls -lah'
+alias tmux='tmux -2'
+alias unittest="python3 -m unittest discover"
