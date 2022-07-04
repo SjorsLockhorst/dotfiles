@@ -29,8 +29,6 @@ Plug 'dense-analysis/ale'
 Plug 'vim-airline/vim-airline'
 Plug 'tpope/vim-surround'
 Plug 'jiangmiao/auto-pairs'     
-
-
 {{ if not .server }}
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 {{ end }}
@@ -188,9 +186,6 @@ nnoremap <F2> :NERDTreeToggle<CR>
 " ----------------
 let g:ale_sign_column_always = 1
 let g:airline#extensions#ale#enabled = 1
-
-" TODO: move this to filetype scripts
-let g:ale_fixers = {'vue': ['prettier'], 'javascript': ['prettier']}
 nmap <F10> :ALEFix<cr>
 let g:ale_fix_on_save = 1
 
@@ -224,7 +219,6 @@ let g:mta_filetypes = {
     \}
 " Fix for not showing css within style tags
 let html_no_rendering=1
-
 {{ if not .server }}
 " ----------------
 " | COC settings |
