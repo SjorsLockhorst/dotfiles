@@ -1,4 +1,4 @@
-{{ if ne .chezmoi.arch "arm" }}
+{{ if not .server }}
 " Make sure ale is disabled so that CoC can do the work
 let g:ale_disable_lsp = 1
 {{ end }}
@@ -31,7 +31,7 @@ Plug 'tpope/vim-surround'
 Plug 'jiangmiao/auto-pairs'     
 
 
-{{ if ne .chezmoi.arch "arm" }}
+{{ if not .server }}
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 {{ end }}
 
@@ -48,7 +48,7 @@ Plug 'alker0/chezmoi.vim'
 " Initialize plugin system
 call plug#end()
 
-{{ if ne .chezmoi.arch "arm" }}
+{{ if not .server }}
 if isdirectory($HOME . "/.vim/plugged/coc.nvim")
     call coc#add_extension(
        \'coc-git',
@@ -225,7 +225,7 @@ let g:mta_filetypes = {
 " Fix for not showing css within style tags
 let html_no_rendering=1
 
-{{ if ne .chezmoi.arch "arm" }}
+{{ if not .server }}
 " ----------------
 " | COC settings |
 " ----------------
