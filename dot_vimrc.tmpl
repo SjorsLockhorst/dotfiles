@@ -47,19 +47,18 @@ Plug 'alker0/chezmoi.vim'
 call plug#end()
 
 {{ if not .server }}
-if isdirectory($HOME . "/.vim/plugged/coc.nvim")
-    call coc#add_extension(
-       \'coc-git',
-       \'coc-pyright',
-       \'coc-json',
-       \'coc-prettier',
-       \'coc-sh',
-       \'coc-yaml',
-       \'coc-eslint',
-       \'coc-tsserver',
-       \'coc-css',
-     \)
-endif
+call coc#add_extension(
+         \'coc-git',
+         \'coc-pyright',
+         \'coc-json',
+         \'coc-prettier',
+         \'coc-sh',
+         \'coc-yaml',
+         \'coc-eslint',
+         \'coc-tsserver',
+         \'coc-css',
+         \'coc-vetur',
+         \)
 {{ end }}
 
 runtime macros/matchit.vim
