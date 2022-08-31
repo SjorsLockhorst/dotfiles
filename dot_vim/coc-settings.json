@@ -1,4 +1,4 @@
 {
-  "python.analysis.typeCheckingMode": "off",
-  "diagnostic.displayByAle": true
+  "diagnostic.displayByAle": true,
+  "jedi.enable": true
 }

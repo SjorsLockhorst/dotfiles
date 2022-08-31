@@ -31,6 +31,7 @@ Plug 'tpope/vim-surround'
 Plug 'jiangmiao/auto-pairs'     
 {{ if not .server }}
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'pappasam/coc-jedi', { 'do': 'yarn install --frozen-lockfile && yarn build', 'branch': 'main' }
 {{ end }}
 
 " Git
@@ -47,18 +48,19 @@ Plug 'alker0/chezmoi.vim'
 call plug#end()
 
 {{ if not .server }}
-call coc#add_extension(
-         \'coc-git',
-         \'coc-pyright',
-         \'coc-json',
-         \'coc-prettier',
-         \'coc-sh',
-         \'coc-yaml',
-         \'coc-eslint',
-         \'coc-tsserver',
-         \'coc-css',
-         \'coc-vetur',
-         \)
+if isdirectory($HOME . "/.vim/plugged/coc.nvim")
+    call coc#add_extension(
+       \'coc-git',
+       \'coc-jedi',
+       \'coc-json',
+       \'coc-prettier',
+       \'coc-sh',
+       \'coc-yaml',
+       \'coc-eslint',
+       \'coc-tsserver',
+       \'coc-css',
+     \)
+endif
 {{ end }}
 
 runtime macros/matchit.vim
