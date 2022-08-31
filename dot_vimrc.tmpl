@@ -31,6 +31,7 @@ Plug 'tpope/vim-surround'
 Plug 'jiangmiao/auto-pairs'     
 {{ if not .server }}
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'pappasam/coc-jedi', { 'do': 'yarn install --frozen-lockfile && yarn build', 'branch': 'main' }
 {{ end }}
 
 " Git
@@ -50,7 +51,7 @@ call plug#end()
 if isdirectory($HOME . "/.vim/plugged/coc.nvim")
     call coc#add_extension(
        \'coc-git',
-       \'coc-pyright',
+       \'coc-jedi',
        \'coc-json',
        \'coc-prettier',
        \'coc-sh',
