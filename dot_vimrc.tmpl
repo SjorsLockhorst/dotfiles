@@ -134,7 +134,6 @@ augroup numbertoggle
 :augroup END
 
 
-" TODO: Move this to fpplugins
 " Set proper tabs and spaces per filetype
 autocmd Filetype html setlocal ts=2 sw=2 expandtab
 autocmd Filetype json setlocal ts=2 sw=2 expandtab
@@ -187,6 +186,15 @@ let g:ale_sign_column_always = 1
 let g:airline#extensions#ale#enabled = 1
 nmap <F10> :ALEFix<cr>
 let g:ale_fix_on_save = 1
+let g:ale_fixers = {
+      \'vue': ['prettier'],
+      \'javascript': ['prettier'],
+      \'python': ["black"],
+      \'json': ['jq'],
+      \}
+let b:ale_linters = {
+      \"python": ["pylint", "flake8"],
+      \}
 
 " --------------------------------
 " | HTML auto close tag settings |
