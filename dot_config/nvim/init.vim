@@ -1,5 +1,6 @@
 source ~/.vimrc
 
+let g:python3_host_prog = expand('~/nvim-env/bin/python3')
 
 " ----------------
 " | FZF settings |

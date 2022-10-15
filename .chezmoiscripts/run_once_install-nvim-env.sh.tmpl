@@ -1,0 +1,8 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+
+cd 
+python3 -m venv nvim-env
+source nvim-env/bin/activate
+pip3 install pynvim
+{{ end -}}
