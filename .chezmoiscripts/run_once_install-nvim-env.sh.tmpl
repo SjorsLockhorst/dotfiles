@@ -1,4 +1,4 @@
-{{- if eq .chezmoi.os "linux" -}}
+{{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
 #!/bin/bash
 
 cd 
