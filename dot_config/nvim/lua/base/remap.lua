@@ -23,3 +23,5 @@ vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
 -- Smarter way to append line below at the end of current line
 vim.keymap.set("n", "J", "mzJ`z")
+
+vim.keymap.set("n", "<leader>w", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
