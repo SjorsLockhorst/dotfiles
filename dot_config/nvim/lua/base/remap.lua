@@ -25,3 +25,12 @@ vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 vim.keymap.set("n", "J", "mzJ`z")
 
 vim.keymap.set("n", "<leader>w", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
+
+-- Apply changes from chezmoi, reload vimrc
+vim.keymap.set("n", "<leader>cms",
+function ()
+    vim.cmd("!chezmoi apply")
+    vim.cmd("source $MYVIMRC")
+    vim.cmd("echo 'Applied chezmoi changes and reloaded' $MYVIMRC")
+end
+)
