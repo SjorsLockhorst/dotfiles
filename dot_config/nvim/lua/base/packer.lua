@@ -74,9 +74,13 @@ return require('packer').startup(function(use)
 		}
 	}
 
+    -- Jupyter notebook setup
+    use("goerz/jupytext.vim")
+    use('jpalardy/vim-slime')
+    use ('hanschen/vim-ipython-cell')
+
 
     -- Unused, from old setup
-
     -- use('jiangmiao/auto-pairs')
     -- Web programming
     -- use('alvan/vim-closetag')

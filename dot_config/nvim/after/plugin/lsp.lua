@@ -48,6 +48,7 @@ lsp.on_attach(function(client, bufnr)
   vim.keymap.set("n", "[d", function() vim.diagnostic.goto_next() end, opts)
   vim.keymap.set("n", "]d", function() vim.diagnostic.goto_prev() end, opts)
   vim.keymap.set("n", "gr", function() vim.lsp.buf.references() end, opts)
+  -- TODO: Change this to be something that currently isn't mapped to
   vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, opts)
   vim.keymap.set("n", "gl", function() vim.diagnostic.open_float() end, opts)
 

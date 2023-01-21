@@ -32,3 +32,6 @@ vim.opt.timeoutlen=500
 vim.opt.colorcolumn = "80"
 
 vim.g.python3_host_prog = "~/nvim-env/bin/python3"
+
+vim.opt.clipboard = "unnamedplus"
+
