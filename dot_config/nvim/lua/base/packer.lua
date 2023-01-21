@@ -26,6 +26,8 @@ return require('packer').startup(function(use)
 	use('tpope/vim-fugitive')
 	use('tpope/vim-surround')
 
+    use('alker0/chezmoi.vim')
+
 	use {
 		'VonHeikemen/lsp-zero.nvim',
 		branch = 'v1.x',
