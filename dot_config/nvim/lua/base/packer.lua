@@ -5,28 +5,44 @@ vim.cmd [[packadd packer.nvim]]
 
 return require('packer').startup(function(use)
 	-- Packer can manage itself
-	use 'wbthomason/packer.nvim'
+	use('wbthomason/packer.nvim')
 	use {
 		'nvim-telescope/telescope.nvim', tag = '0.1.1',
 		-- or                            , branch = '0.1.x',
 		requires = { {'nvim-lua/plenary.nvim'} }
 	}
+    -- Colors
 	use({
 		'rose-pine/neovim',
 		as = 'rose-pine',
 		config = function()
 			require("rose-pine").setup()
-			vim.cmd('colorscheme rose-pine')
 		end
 	})
+    use('arcticicestudio/nord-vim')
+
 	use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
+    use('alker0/chezmoi.vim')
+
 	use('ThePrimeagen/harpoon')
 	use('mbbill/undotree')
-
 	use('tpope/vim-fugitive')
 	use('tpope/vim-surround')
 
-    use('alker0/chezmoi.vim')
+
+    -- Tmux integration
+    use('tmux-plugins/vim-tmux-focus-events')
+    use('christoomey/vim-tmux-navigator')
+
+    -- Easier coding
+    use('tpope/vim-commentary')
+    use('vim-airline/vim-airline')
+    use('jiangmiao/auto-pairs')
+
+
+    -- Web programming
+    -- use('alvan/vim-closetag')
+    -- use('AndrewRadev/tagalong.vim')
 
 	use {
 		'VonHeikemen/lsp-zero.nvim',
