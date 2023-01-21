@@ -8,7 +8,6 @@ return require('packer').startup(function(use)
 	use('wbthomason/packer.nvim')
 	use {
 		'nvim-telescope/telescope.nvim', tag = '0.1.1',
-		-- or                            , branch = '0.1.x',
 		requires = { {'nvim-lua/plenary.nvim'} }
 	}
     -- Colors
@@ -21,49 +20,66 @@ return require('packer').startup(function(use)
 	})
     use('arcticicestudio/nord-vim')
 
+    -- Syntax parsing
 	use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
+
+    -- Syntax for chezmoi specific files
     use('alker0/chezmoi.vim')
 
+    -- Set a command to map to a specific file
 	use('ThePrimeagen/harpoon')
-	use('mbbill/undotree')
-	use('tpope/vim-fugitive')
-	use('tpope/vim-surround')
 
+    -- An undo tree for more elaborate undo's
+	use('mbbill/undotree')
+
+    -- Vim Git integration
+	use('tpope/vim-fugitive')
+
+    -- Easy surrounding of brackents, parentheses etc.
+	use('tpope/vim-surround')
 
     -- Tmux integration
     use('tmux-plugins/vim-tmux-focus-events')
     use('christoomey/vim-tmux-navigator')
 
-    -- Easier coding
+    -- Shortcuts for comments
     use('tpope/vim-commentary')
+
+    -- Enable an airline
     use('vim-airline/vim-airline')
-    use('jiangmiao/auto-pairs')
 
-
-    -- Web programming
-    -- use('alvan/vim-closetag')
-    -- use('AndrewRadev/tagalong.vim')
-
+    -- Language Server Protocol
 	use {
 		'VonHeikemen/lsp-zero.nvim',
 		branch = 'v1.x',
 		requires = {
 			-- LSP Support
-			{'neovim/nvim-lspconfig'},             -- Required
-			{'williamboman/mason.nvim'},           -- Optional
-			{'williamboman/mason-lspconfig.nvim'}, -- Optional
+			{'neovim/nvim-lspconfig'},
 
-			-- Autocompletion
-			{'hrsh7th/nvim-cmp'},         -- Required
-			{'hrsh7th/cmp-nvim-lsp'},     -- Required
-			{'hrsh7th/cmp-buffer'},       -- Optional
-			{'hrsh7th/cmp-path'},         -- Optional
-			{'saadparwaiz1/cmp_luasnip'}, -- Optional
-			{'hrsh7th/cmp-nvim-lua'},     -- Optional
+            -- Mason, handler for installing external LSP's, linters etc.
+			{'williamboman/mason.nvim'},
+			{'williamboman/mason-lspconfig.nvim'},
+
+			-- Autocompletion dependencies
+			{'hrsh7th/nvim-cmp'},
+			{'hrsh7th/cmp-nvim-lsp'},
+			{'hrsh7th/cmp-buffer'},
+			{'hrsh7th/cmp-path'},
+			{'saadparwaiz1/cmp_luasnip'},
+			{'hrsh7th/cmp-nvim-lua'},
 
 			-- Snippets
-			{'L3MON4D3/LuaSnip'},             -- Required
-			{'rafamadriz/friendly-snippets'}, -- Optional
+			{'L3MON4D3/LuaSnip'},
+			{'rafamadriz/friendly-snippets'},
 		}
 	}
+
+
+    -- Unused, from old setup
+
+    -- use('jiangmiao/auto-pairs')
+    -- Web programming
+    -- use('alvan/vim-closetag')
+    -- use('AndrewRadev/tagalong.vim')
+
 end)
