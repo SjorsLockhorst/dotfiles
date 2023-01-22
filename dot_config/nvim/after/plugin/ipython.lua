@@ -15,6 +15,14 @@ vim.keymap.set('n', '<leader>cm', ':IPythonCellToMarkdown<CR>')
 -- Set cell definition for vim-ipy
 vim.api.nvim_set_var('ipy_celldef', "^# %%")
 
+local RunQtConsole = function()
+    vim.fn.jobstart("jupyter qtconsole --JupyterWidget.include_other_output=True")
+end
+
+local ConnectQTConsole = function()
+    vim.fn.IPyConnect("--no-window", "--existing")
+end
+
 -- Reset default mappings
 vim.api.nvim_set_var('nvim_ipy_perform_mappings', 0)
 vim.keymap.set('n', '<leader>rs', '<Plug>(IPy-Run)')
@@ -22,16 +30,11 @@ vim.keymap.set('v', '<leader>rs', '<Plug>(IPy-Run)')
 vim.keymap.set('n', '<leader>rc', '<Plug>(IPy-RunCell)')
 vim.keymap.set('n', '<leader>C', ':IPythonCellNextCell<CR> <Plug>(IPy-RunCell)')
 vim.keymap.set('n', '<leader>ro', '<Plug>(IPy-RunOp)')
-vim.keymap.set('n', '<leader>ra', '<Plug>(IPy-RunAll)')
 vim.keymap.set('n', '<leader>X', '<Plug>(IPy-Interrupt)')
 
-local RunQtConsole = function()
-    local test = vim.fn.jobstart("jupyter qtconsole --JupyterWidget.include_other_output=True")
-end
-
-local ConnectQTConsole = function()
-    vim.fn.IPyConnect("--no-window", "--existing")
-end
+-- TODO: Make this less flaky
+vim.cmd("let @l = 'j rc]c'")
+vim.keymap.set('n', '<leader>ra', ':g/^# %%/normal! @l<CR>')
 
 vim.keymap.set('n','<leader>ss', function() RunQtConsole() end)
 vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
