@@ -1,14 +1,44 @@
--- slime configuration 
--- always use tmux
 
-
-vim.api.nvim_set_var('slime_target', 'tmux')
-
--- fix paste issues in ipython
+-- IPythonCell definitions of what is a cell
 vim.api.nvim_set_var(
     "ipython_cell_tag",
     {"# |%%--%%|", "# %%", "#%%", "# <codecell>"}
 )
+
+-- IPythonCell movements
+vim.keymap.set('n', '[c', ':IPythonCellPrevCell<CR>')
+vim.keymap.set('n', ']c', ':IPythonCellNextCell<CR>')
+vim.keymap.set('n', '<leader>ca', ':IPythonCellInsertAbove<CR>')
+vim.keymap.set('n', '<leader>cb', ':IPythonCellInsertBelow<CR>')
+vim.keymap.set('n', '<leader>cm', ':IPythonCellToMarkdown<CR>')
+
+-- Set cell definition for vim-ipy
+vim.api.nvim_set_var('ipy_celldef', "^# %%")
+
+-- Reset default mappings
+vim.api.nvim_set_var('nvim_ipy_perform_mappings', 0)
+vim.keymap.set('n', '<leader>rs', '<Plug>(IPy-Run)')
+vim.keymap.set('v', '<leader>rs', '<Plug>(IPy-Run)')
+vim.keymap.set('n', '<leader>rc', '<Plug>(IPy-RunCell)')
+vim.keymap.set('n', '<leader>C', ':IPythonCellNextCell<CR> <Plug>(IPy-RunCell)')
+vim.keymap.set('n', '<leader>ro', '<Plug>(IPy-RunOp)')
+vim.keymap.set('n', '<leader>ra', '<Plug>(IPy-RunAll)')
+vim.keymap.set('n', '<leader>X', '<Plug>(IPy-Interrupt)')
+
+local RunQtConsole = function()
+    local test = vim.fn.jobstart("jupyter qtconsole --JupyterWidget.include_other_output=True")
+end
+
+local ConnectQTConsole = function()
+    vim.fn.IPyConnect("--no-window", "--existing")
+end
+
+vim.keymap.set('n','<leader>ss', function() RunQtConsole() end)
+vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
+
+
+
+-- vim.api.nvim_set_var('slime_target', 'x11')
 -- always send text to the top-right pane in the current tmux tab without asking
 -- vim.api.nvim_exec(
 -- [[
@@ -23,33 +53,31 @@ vim.api.nvim_set_var(
 -- ipython-cell configuration
 
 -- map <Leader>s to start IPython
-vim.keymap.set('n', '<Leader>ss', ':SlimeSend1 ipython --matplotlib<CR>')
+-- vim.keymap.set('n', '<Leader>ss', ':SlimeSend1 ipython --matplotlib<CR>')
 
 -- map <Leader>r to run script
-vim.keymap.set('n', '<Leader>pra', ':IPythonCellRun<CR>')
+-- vim.keymap.set('n', '<Leader>pra', ':IPythonCellRun<CR>')
 
 -- map <Leader>R to run script and time the execution
-vim.keymap.set('n', '<Leader>rat', ':IPythonCellRunTime<CR>')
+-- vim.keymap.set('n', '<Leader>rat', ':IPythonCellRunTime<CR>')
 
 -- map <Leader>c to execute the current cell
-vim.keymap.set('n', '<Leader>rc', ':IPythonCellExecuteCell<CR>')
+-- vim.keymap.set('n', '<Leader>rc', ':IPythonCellExecuteCell<CR>')
 
 -- map <Leader>C to execute the current cell and jump to the next cell
-vim.keymap.set('n', '<Leader>C', ':IPythonCellExecuteCellJump<CR>')
+-- vim.keymap.set('n', '<Leader>C', ':IPythonCellExecuteCellJump<CR>')
 
 -- map <Leader>l to clear IPython screen
-vim.keymap.set('n', '<Leader>pcl', ':IPythonCellClear<CR>')
+-- vim.keymap.set('n', '<Leader>pcl', ':IPythonCellClear<CR>')
 
 -- map <Leader>x to close all Matplotlib figure windows
- vim.keymap.set('n', '<Leader>pcc', ':IPythonCellClose<CR>')
+ -- vim.keymap.set('n', '<Leader>pcc', ':IPythonCellClose<CR>')
 
 -- map [c and ]c to jump to the previous and next cell header
-vim.keymap.set('n', '[c', ':IPythonCellPrevCell<CR>')
-vim.keymap.set('n', ']c', ':IPythonCellNextCell<CR>')
 
 -- map <Leader>h to send the current line or current selection to IPython
-vim.keymap.set("n", "<leader>h", "<Plug>SlimeLineSend")
-vim.keymap.set("v", "<leader>h", "<Plug>SlimeRegionSend")
+-- vim.keymap.set("n", "<leader>h", "<Plug>SlimeLineSend")
+-- vim.keymap.set("v", "<leader>h", "<Plug>SlimeRegionSend")
 
 -- map <Leader>p to run the previous command
 -- vim.keymap.set('n', '<Leader>p', ':IPythonCellPrevCommand<CR>')
@@ -70,3 +98,7 @@ vim.keymap.set("v", "<leader>h", "<Plug>SlimeRegionSend")
 -- also make <F9> and <F10> work in insert mode
 -- imap <F9> <C-o>:IPythonCellInsertAbove<CR>
 -- imap <F10> <C-o>:IPythonCellInsertBelow<CR>
+--
+
+--
+--
