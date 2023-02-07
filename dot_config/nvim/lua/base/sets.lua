@@ -1,37 +1,52 @@
-vim.opt.nu = true
-vim.opt.relativenumber=true
+vim.o.nu = true
+vim.o.relativenumber=true
+vim.wo.number = true
 
-vim.opt.splitbelow = true
-vim.opt.splitright = true
+vim.o.mouse = "a"
 
-vim.opt.cursorline = true
+vim.o.splitbelow = true
+vim.o.splitright = true
 
-vim.opt.tabstop = 4
-vim.opt.softtabstop = 4
-vim.opt.shiftwidth = 4
-vim.opt.expandtab = true
-vim.opt.smarttab = true
+vim.o.cursorline = true
 
-vim.opt.smartindent = true
+vim.o.tabstop = 4
+vim.o.softtabstop = 4
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
+vim.o.smarttab = true
+vim.o.breakindent = true
 
-vim.opt.wrap = false
+vim.o.smartindent = true
 
-vim.opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
-vim.opt.undofile = true
+vim.o.wrap = false
 
-vim.opt.hlsearch = false
-vim.opt.incsearch = true
+vim.o.undodir = os.getenv("HOME") .. "/.vim/undodir"
+vim.o.undofile = true
 
-vim.opt.termguicolors = true
+vim.o.hlsearch = false
+vim.o.incsearch = true
 
-vim.opt.scrolloff = 8
+vim.o.termguicolors = true
 
-vim.opt.updatetime=300
-vim.opt.timeoutlen=500
+vim.o.scrolloff = 8
 
-vim.opt.colorcolumn = "80"
+vim.o.updatetime=250
+vim.o.timeoutlen=500
+vim.wo.signcolumn = "yes"
 
+vim.o.colorcolumn = "88"
+vim.o.completeopt = "menuone,noselect"
+
+vim.o.clipboard = "unnamedplus"
 vim.g.python3_host_prog = "~/nvim-env/bin/python3"
 
-vim.opt.clipboard = "unnamedplus"
-
+-- [[ Highlight on yank ]]
+-- See `:help vim.highlight.on_yank()`
+local highlight_group = vim.api.nvim_create_augroup('YankHighlight', { clear = true })
+vim.api.nvim_create_autocmd('TextYankPost', {
+  callback = function()
+    vim.highlight.on_yank()
+  end,
+  group = highlight_group,
+  pattern = '*',
+})

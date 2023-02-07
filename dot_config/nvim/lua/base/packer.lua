@@ -10,6 +10,8 @@ return require('packer').startup(function(use)
 		'nvim-telescope/telescope.nvim', tag = '0.1.1',
 		requires = { {'nvim-lua/plenary.nvim'} }
 	}
+    -- Fuzzy Finder Algorithm which requires local dependencies to be built. Only load if `make` is available
+    use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make', cond = vim.fn.executable 'make' == 1 }
     -- Colors
 	use({
 		'rose-pine/neovim',
@@ -34,6 +36,8 @@ return require('packer').startup(function(use)
 
     -- Vim Git integration
 	use('tpope/vim-fugitive')
+    use('tpope/vim-rhubarb')
+    use('lewis6991/gitsigns.nvim')
 
     -- Easy surrounding of brackents, parentheses etc.
 	use('tpope/vim-surround')
@@ -43,10 +47,17 @@ return require('packer').startup(function(use)
     use('christoomey/vim-tmux-navigator')
 
     -- Shortcuts for comments
-    use('tpope/vim-commentary')
+    use('numToStr/Comment.nvim')
 
     -- Enable an airline
-    use('vim-airline/vim-airline')
+    use('nvim-lualine/lualine.nvim')
+
+    -- Add identation guides even on blank lines
+    use('lukas-reineke/indent-blankline.nvim')
+
+    -- Detect tabstop and shiftwidth automatically
+    use('tpope/vim-sleuth')
+
 
     -- Language Server Protocol
 	use {
@@ -71,6 +82,12 @@ return require('packer').startup(function(use)
 			-- Snippets
 			{'L3MON4D3/LuaSnip'},
 			{'rafamadriz/friendly-snippets'},
+
+            -- Useful status updates for LSP
+            {'j-hui/fidget.nvim'},
+
+            -- Additional Lua configuration
+            {'folke/neodev.nvim'},
 		}
 	}
 
