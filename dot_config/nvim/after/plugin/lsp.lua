@@ -10,8 +10,8 @@ require("fidget").setup()
 lsp.preset('recommended')
 
 lsp.configure("pylsp", {
-     settings = {
-         pylsp = {
+    settings = {
+        pylsp = {
             plugins = {
                 pycodestyle = {
                     enabled = false
@@ -81,3 +81,14 @@ lsp.setup()
 vim.diagnostic.config({
     virtual_text = true,
 })
+
+vim.keymap.set("n", "<leader>f",  vim.lsp.buf.format)
+vim.keymap.set("n", "<leader>rn",  vim.lsp.buf.rename)
+
+-- Remove weird panda parameter emoji that's unsupported
+local cfg = {
+  hint_prefix = "",  -- Panda for parameter, NOTE: for the terminal not support emoji, might crash
+}
+
+-- recommended:
+require('lsp_signature').setup(cfg)

@@ -88,8 +88,10 @@ return require('packer').startup(function(use)
 
             -- Additional Lua configuration
             {'folke/neodev.nvim'},
+            {'ray-x/lsp_signature.nvim'}
 		}
 	}
+
 
     -- Jupyter notebook setup
     use("goerz/jupytext.vim")
