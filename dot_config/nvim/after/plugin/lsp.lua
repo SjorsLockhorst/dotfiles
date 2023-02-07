@@ -2,30 +2,35 @@
 -- Learn to configure LSP servers, see :help lsp-zero-api-showcase
 -- Setup neovim lua configuration
 require('neodev').setup()
+require("fidget").setup()
 
 local lsp = require('lsp-zero')
-require("fidget").setup()
 
 
 lsp.preset('recommended')
 
 lsp.configure("pylsp", {
+  -- on_attach = function() print("test") end,
     settings = {
         pylsp = {
             plugins = {
                 pycodestyle = {
                     enabled = false
                 },
-                flake8 = {
-                    enabled = true,
-                },
-                pylint = {
-                    enabled = true
-                }
             }
         }
     }
 })
+
+local function FixAll()
+  vim.lsp.buf.code_action({context = {only = {"source.fixAll"}}, apply = true})
+  vim.lsp.buf.format()
+end
+
+lsp.configure("ruff_lsp", {
+  on_attach = function() vim.keymap.set("n", "<leader>fa",  FixAll) end
+})
+
 
 -- Change default lsp mappings
 local cmp = require('cmp')
@@ -90,5 +95,4 @@ local cfg = {
   hint_prefix = "",  -- Panda for parameter, NOTE: for the terminal not support emoji, might crash
 }
 
--- recommended:
 require('lsp_signature').setup(cfg)
