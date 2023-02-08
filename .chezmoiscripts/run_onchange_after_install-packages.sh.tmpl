@@ -1,0 +1,38 @@
+{{ if eq .chezmoi.os "linux" -}}
+
+
+{{ $packages := list
+	"curl"
+	"git"
+	"vim"
+	"zsh"
+	"ripgrep"
+	"fzf"
+	"python3"
+	"python3-pip"
+	"tmux"
+	"silversearcher-ag"
+	"jq"
+	"procps"
+	"fonts-powerline"
+	"unzip"
+-}}
+
+{{ $gui_packages := list
+	"brave-browser"
+-}}
+
+#!/bin/sh
+# Add brave browser gpg
+{{ if not .server -}}
+sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+{{ end -}}
+
+sudo apt-get update
+sudo apt-get install -y {{ $packages | join " " }}
+{{ if not .server -}}
+sudo apt-get install -y {{ $gui_packages | join " " }}
+{{ end -}}
+
+{{ end -}}
