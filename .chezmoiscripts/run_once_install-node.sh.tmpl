@@ -1,4 +1,0 @@
-{{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
-#!/bin/sh
-curl -sL install-node.vercel.app/lts | sudo bash -s -- --force 
-{{ end -}} 

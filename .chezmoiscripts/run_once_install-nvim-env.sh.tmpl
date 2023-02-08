@@ -1,8 +1,13 @@
 {{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
+{{ $packages := list
+	"pynvim"
+-}}
+
 #!/bin/bash
 
 cd 
 python3 -m venv nvim-env
 source nvim-env/bin/activate
-pip3 install pynvim
+pip install --upgrade pip
+pip install {{ $packages | join " " }}
 {{ end -}}
