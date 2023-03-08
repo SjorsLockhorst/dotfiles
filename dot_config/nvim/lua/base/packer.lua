@@ -99,6 +99,11 @@ return require('packer').startup(function(use)
     use ('hanschen/vim-ipython-cell')
     use('bfredl/nvim-ipy')
 
+    -- Debugging
+    use("mfussenegger/nvim-dap")
+    use("mfussenegger/nvim-dap-python")
+    use("rcarriga/nvim-dap-ui")
+    use("jay-babu/mason-nvim-dap.nvim")
 
     -- Unused, from old setup
     -- use('jiangmiao/auto-pairs')
