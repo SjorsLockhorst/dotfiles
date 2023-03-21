@@ -23,7 +23,10 @@ return require('packer').startup(function(use)
     use('arcticicestudio/nord-vim')
 
     -- Syntax parsing
-	use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
+    use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
+
+    -- Auto open and close tags with treesitter
+    use('windwp/nvim-ts-autotag')
 
     -- Syntax for chezmoi specific files
     use('alker0/chezmoi.vim')
@@ -104,6 +107,22 @@ return require('packer').startup(function(use)
     use("mfussenegger/nvim-dap-python")
     use("rcarriga/nvim-dap-ui")
     use("jay-babu/mason-nvim-dap.nvim")
+
+    -- Codicons for nvim dap ui
+    use("mortepau/codicons.nvim")
+
+
+    use {
+	"themaxmarchuk/tailwindcss-colors.nvim",
+	-- load only on require("tailwindcss-colors")
+	module = "tailwindcss-colors",
+	-- run the setup function after plugin is loaded 
+	config = function ()
+	    -- pass config options here (or nothing to use defaults)
+	    require("tailwindcss-colors").setup()
+	end
+    }
+    use("norcalli/nvim-colorizer.lua")
 
     -- Unused, from old setup
     -- use('jiangmiao/auto-pairs')

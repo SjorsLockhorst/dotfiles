@@ -17,6 +17,7 @@ vim.o.smarttab = true
 vim.o.breakindent = true
 
 vim.o.smartindent = true
+vim.o.filetype = true
 
 vim.o.wrap = false
 

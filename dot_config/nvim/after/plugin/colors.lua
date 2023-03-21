@@ -4,3 +4,5 @@ function SetColors(color)
 end
 
 SetColors()
+
+require("colorizer").setup()

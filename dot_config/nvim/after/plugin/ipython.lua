@@ -41,7 +41,7 @@ vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
 
 
 
-vim.api.nvim_set_var('slime_target', 'tmux')
+-- vim.api.nvim_set_var('slime_target', 'tmux')
 -- always send text to the top-right pane in the current tmux tab without asking
 -- vim.api.nvim_exec(
 -- [[
@@ -56,7 +56,7 @@ vim.api.nvim_set_var('slime_target', 'tmux')
 -- ipython-cell configuration
 
 -- map <Leader>s to start IPython
-vim.keymap.set('n', '<Leader>t', ':w<CR> :SlimeSend1 pytest<CR>')
+-- vim.keymap.set('n', '<Leader>t', ':w<CR> :SlimeSend1 pytest<CR>')
 
 -- map <Leader>r to run script
 -- vim.keymap.set('n', '<Leader>pra', ':IPythonCellRun<CR>')
