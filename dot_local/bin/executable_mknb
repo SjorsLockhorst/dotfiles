@@ -1,4 +1,11 @@
 #!/bin/bash
 
+if ! command -v jupytext &> /dev/null
+then
+    echo "jupytext command not found. Make sure it's available in PATH."
+    exit 1
+fi
+
+
 touch "$1".py
 jupytext --to notebook "$1".py
