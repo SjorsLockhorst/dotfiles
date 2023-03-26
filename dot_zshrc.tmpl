@@ -109,6 +109,23 @@ if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
 fi
 
+function venv () {
+    if [ -n "$1" ]; then
+	source $1
+    else
+	source *-env/bin/activate
+    fi
+    if ! { [ "$TERM" = "screen" ] && [ -n "$TMUX" ]; } then
+	tmux set-environment VIRTUAL_ENV $VIRTUAL_ENV &&
+	alias deactivate='\deactivate && tmux set-environment -u VIRTUAL_ENV && unalias deactivate'
+    fi
+}
+
+if [ -n "$VIRTUAL_ENV" ]; then
+    source $VIRTUAL_ENV/bin/activate;
+fi
+
+
 alias open="xdg-open"
 alias update='sudo apt-get update && sudo apt-get upgrade'
 alias sl=ls
