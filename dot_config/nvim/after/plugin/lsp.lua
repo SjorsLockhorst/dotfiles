@@ -20,6 +20,9 @@ lsp.configure("pylsp", {
         pycodestyle = {
           enabled = false
         },
+        pyflakes = {
+          enabled = false
+        }
       }
     }
   }
