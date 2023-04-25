@@ -55,7 +55,7 @@ lsp.setup_nvim_cmp({
 })
 
 -- Make sure mappings are only used when an lsp is available
-local on_attach = lsp.on_attach(function(_, bufnr)
+local on_attach = lsp.on_attach(function(client, bufnr)
   local opts = { buffer = bufnr, remap = false }
 
   vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
@@ -84,8 +84,11 @@ local on_attach = lsp.on_attach(function(_, bufnr)
     vim.lsp.buf.format()
   end, { desc = 'Format current buffer with LSP' })
 
-  -- Init tailwindcss colors
-  require("tailwindcss-colors").buf_attach(bufnr)
+  if client.name == 'tailwindcss' then
+    -- Init tailwindcss colors
+    require("tailwindcss-colors").buf_attach(bufnr)
+  end
+
 end)
 
 nvim_lsp["tailwindcss"].setup({
