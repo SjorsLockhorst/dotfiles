@@ -54,7 +54,7 @@ lsp.setup_nvim_cmp({
 })
 
 -- Make sure mappings are only used when an lsp is available
-local on_attach = lsp.on_attach(function(_, bufnr)
+local on_attach = lsp.on_attach(function(client, bufnr)
   local opts = { buffer = bufnr, remap = false }
 
   vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
