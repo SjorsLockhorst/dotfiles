@@ -13,7 +13,6 @@ local nvim_lsp = require('lspconfig')
 lsp.preset('recommended')
 
 lsp.configure("pylsp", {
-  -- on_attach = function() print("test") end,
   settings = {
     pylsp = {
       plugins = {
@@ -85,7 +84,9 @@ local on_attach = lsp.on_attach(function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 
   -- Init tailwindcss colors
-  require("tailwindcss-colors").buf_attach(bufnr)
+  if vim.bo[bufnr].filetype == 'vue' then
+    require("tailwindcss-colors").buf_attach(bufnr)
+  end
 end)
 
 nvim_lsp["tailwindcss"].setup({
