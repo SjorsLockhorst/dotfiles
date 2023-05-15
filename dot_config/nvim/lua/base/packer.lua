@@ -20,10 +20,10 @@ return require('packer').startup(function(use)
 			require("rose-pine").setup()
 		end
 	})
-    use('arcticicestudio/nord-vim')
 
     -- Syntax parsing
     use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
+    use("christianchiarulli/nvcode-color-schemes.vim")
 
     -- Auto open and close tags with treesitter
     use('windwp/nvim-ts-autotag')
@@ -123,6 +123,8 @@ return require('packer').startup(function(use)
 	end
     }
     use("norcalli/nvim-colorizer.lua")
+
+    use {"ellisonleao/glow.nvim", config = function() require("glow").setup() end}
 
     -- Unused, from old setup
     -- use('jiangmiao/auto-pairs')
