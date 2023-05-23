@@ -9,6 +9,16 @@
     type = "git-repo"
     url = "https://github.com/wbthomason/packer.nvim"
     depth = 1
+
+{{ $pomodoroVersion := "0.3.0" -}}
+["bin/pomodoro"]
+    type = "file"
+    url = "https://github.com/open-pomodoro/openpomodoro-cli/releases/download/v{{ $pomodoroVersion }}/openpomodoro-cli_{{ $pomodoroVersion }}_{{ .chezmoi.os }}_{{ .chezmoi.arch }}.tar.gz"
+    executable = true
+    ["bin/pomodoro".filter]
+    command = "tar"
+    args = ["--extract", "--file", "/dev/stdin", "--gzip", "--to-stdout", "pomodoro"]
+
 {{- end }}
 
 [".tmux/plugins/tpm/"]
