@@ -98,7 +98,9 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+# Set vi as editor
 set -o vi
+
 {{ if .server -}}
 export EDITOR=vim
 {{ else -}}
@@ -109,6 +111,7 @@ if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
 fi
 
+# Activation of virtual-env 
 function venv () {
     if [ -n "$1" ]; then
 	source $1
@@ -121,6 +124,7 @@ function venv () {
     fi
 }
 
+# Activate virtual environment if the variable is set
 if [ -n "$VIRTUAL_ENV" ]; then
     source $VIRTUAL_ENV/bin/activate;
 fi

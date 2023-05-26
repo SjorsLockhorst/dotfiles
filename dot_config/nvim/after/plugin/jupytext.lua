@@ -1,1 +1,1 @@
-vim.api.nvim_set_var('jupytext_fmt', 'py:percent')
+vim.g.jupytext_fmt = "py:percent"

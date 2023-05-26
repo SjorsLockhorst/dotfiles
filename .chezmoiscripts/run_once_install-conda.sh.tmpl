@@ -1,0 +1,7 @@
+{{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
+#!/bin/sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -u
+rm miniconda.sh
+conda config --set auto_activate_base false
+{{ end -}}

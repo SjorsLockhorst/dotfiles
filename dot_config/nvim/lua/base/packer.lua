@@ -126,6 +126,11 @@ return require('packer').startup(function(use)
 
     use {"ellisonleao/glow.nvim", config = function() require("glow").setup() end}
 
+    use({
+	"iamcco/markdown-preview.nvim",
+	run = function() vim.fn["mkdp#util#install"]() end,
+    })
+    use("untitled-ai/jupyter_ascending.vim")
     -- Unused, from old setup
     -- use('jiangmiao/auto-pairs')
     -- Web programming

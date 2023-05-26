@@ -1,57 +1,30 @@
-
 -- IPythonCell definitions of what is a cell
-vim.api.nvim_set_var(
-    "ipython_cell_tag",
-    {"# |%%--%%|", "# %%", "#%%", "# <codecell>"}
-)
-
--- IPythonCell movements
-vim.keymap.set('n', '[c', ':IPythonCellPrevCell<CR>')
-vim.keymap.set('n', ']c', ':IPythonCellNextCell<CR>')
-vim.keymap.set('n', '<leader>ca', ':IPythonCellInsertAbove<CR>')
-vim.keymap.set('n', '<leader>cb', ':IPythonCellInsertBelow<CR>')
-vim.keymap.set('n', '<leader>cm', ':IPythonCellToMarkdown<CR>')
+vim.g.ipython_cell_tag = { "# |%%--%%|", "# %%", "#%%", "# <codecell>" }
 
 -- Set cell definition for vim-ipy
-vim.api.nvim_set_var('ipy_celldef', "^# %%")
+vim.g.ipy_celldef = "^# %%"
 
-local RunQtConsole = function()
-    vim.fn.jobstart("jupyter qtconsole --JupyterWidget.include_other_output=True")
-end
+vim.g.slime_target = "tmux"
+vim.g.slime_paste_file = vim.fn.expand("$HOME/.slime_paste")
 
-local ConnectQTConsole = function()
-    vim.fn.IPyConnect("--no-window", "--existing")
-end
-
--- Reset default mappings
-vim.api.nvim_set_var('nvim_ipy_perform_mappings', 0)
-vim.keymap.set('n', '<leader>rs', '<Plug>(IPy-Run)')
-vim.keymap.set('v', '<leader>rs', '<Plug>(IPy-Run)')
-vim.keymap.set('n', '<leader>rc', '<Plug>(IPy-RunCell)')
-vim.keymap.set('n', '<leader>C', ':IPythonCellNextCell<CR> <Plug>(IPy-RunCell)')
-vim.keymap.set('n', '<leader>ro', '<Plug>(IPy-RunOp)')
-vim.keymap.set('n', '<leader>X', '<Plug>(IPy-Interrupt)')
-
--- TODO: Make this less flaky
-vim.cmd("let @l = 'j rc]c'")
-vim.keymap.set('n', '<leader>ra', ':g/^# %%/normal! @l<CR>')
-
-vim.keymap.set('n','<leader>ss', function() RunQtConsole() end)
-vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
+vim.keymap.set("n", "<leader>l", "<Plug>SlimeLineSend")
+vim.keymap.set("v", "<leader>s", "<Plug>SlimeRegionSend")
+vim.keymap.set("n", "<leader>s", "<Plug>SlimeSendCell")
 
 
-
--- vim.api.nvim_set_var('slime_target', 'tmux')
 -- always send text to the top-right pane in the current tmux tab without asking
--- vim.api.nvim_exec(
--- [[
--- let g:slime_default_config = {
---     \ 'socket_name': 'default,
---     \ 'target_pane': '{top-right}' }
--- ]]
--- )
+vim.g.slime_default_config = {
+  socket_name = 'default',
+  target_pane = '{top-right}'
+}
+vim.g.slime_dont_ask_default = 1
 
--- vim.api.nvim_set_var('slime_dont_ask_default', 1)
+function StartTmuxRepl(repl_command)
+  vim.cmd("silent !tmux split-window -h\\; last-pane") -- Create a vertical split in Tmux
+  vim.cmd(string.format("SlimeSend1 %s", repl_command))
+end
+
+
 
 -- ipython-cell configuration
 
@@ -74,13 +47,11 @@ vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
 -- vim.keymap.set('n', '<Leader>pcl', ':IPythonCellClear<CR>')
 
 -- map <Leader>x to close all Matplotlib figure windows
- -- vim.keymap.set('n', '<Leader>pcc', ':IPythonCellClose<CR>')
+-- vim.keymap.set('n', '<Leader>pcc', ':IPythonCellClose<CR>')
 
 -- map [c and ]c to jump to the previous and next cell header
 
 -- map <Leader>h to send the current line or current selection to IPython
--- vim.keymap.set("n", "<leader>h", "<Plug>SlimeLineSend")
--- vim.keymap.set("v", "<leader>h", "<Plug>SlimeRegionSend")
 
 -- map <Leader>p to run the previous command
 -- vim.keymap.set('n', '<Leader>p', ':IPythonCellPrevCommand<CR>')
@@ -104,4 +75,28 @@ vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
 --
 
 --
+--
+-- local RunQtConsole = function()
+--     vim.fn.jobstart("jupyter qtconsole --JupyterWidget.include_other_output=True")
+-- end
+--
+-- local ConnectQTConsole = function()
+--     vim.fn.IPyConnect("--no-window", "--existing")
+-- end
+--
+-- -- Reset default mappings
+-- vim.api.nvim_set_var('nvim_ipy_perform_mappings', 0)
+-- vim.keymap.set('n', '<leader>rs', '<Plug>(IPy-Run)')
+-- vim.keymap.set('v', '<leader>rs', '<Plug>(IPy-Run)')
+-- vim.keymap.set('n', '<leader>rc', '<Plug>(IPy-RunCell)')
+-- vim.keymap.set('n', '<leader>C', ':IPythonCellNextCell<CR> <Plug>(IPy-RunCell)')
+-- vim.keymap.set('n', '<leader>ro', '<Plug>(IPy-RunOp)')
+-- vim.keymap.set('n', '<leader>X', '<Plug>(IPy-Interrupt)')
+
+-- TODO: Make this less flaky
+-- vim.cmd("let @l = 'j rc]c'")
+-- vim.keymap.set('n', '<leader>ra', ':g/^# %%/normal! @l<CR>')
+--
+-- vim.keymap.set('n','<leader>ss', function() RunQtConsole() end)
+-- vim.keymap.set('n','<leader>sc', function() ConnectQTConsole() end)
 --

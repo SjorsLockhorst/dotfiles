@@ -68,7 +68,7 @@ local on_attach = lsp.on_attach(function(client, bufnr)
   vim.keymap.set("n", "<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, opts)
 
   vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-  vim.keymap.set("i", "<C-k>", vim.lsp.buf.signature_help, opts)
+  vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, opts)
 
   -- Lesser used LSP functionality
   vim.keymap.set("n", 'gD', vim.lsp.buf.declaration, opts)
@@ -104,9 +104,9 @@ vim.diagnostic.config({
 vim.keymap.set("n", "<leader>f", vim.lsp.buf.format)
 vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename)
 
--- Remove weird panda parameter emoji that's unsupported
-local cfg = {
-  hint_prefix = "", -- Panda for parameter, NOTE: for the terminal not support emoji, might crash
-}
-
-require('lsp_signature').setup(cfg)
+-- -- Remove weird panda parameter emoji that's unsupported
+-- local cfg = {
+--   hint_prefix = "", -- Panda for parameter, NOTE: for the terminal not support emoji, might crash
+-- }
+--
+-- require('lsp_signature').setup(cfg)
