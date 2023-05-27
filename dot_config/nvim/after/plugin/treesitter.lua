@@ -6,7 +6,14 @@ require 'nvim-treesitter.configs'.setup {
     ensure_installed = { "c", "python", "vue", "typescript", "lua", "vim", "help" },
 
     -- Install parsers synchronously (only applied to `ensure_installed`)
-    highlight = { enable = true },
+    highlight = {
+        enable = true
+    },
+    disable = function(_, _)
+        if string.find(vim.bo.filetype, "chezmoitmpl") then
+            return true
+        end
+    end,
     indent = { enable = true, disable = { 'python' } },
     incremental_selection = {
         enable = true,
@@ -20,7 +27,7 @@ require 'nvim-treesitter.configs'.setup {
     textobjects = {
         select = {
             enable = true,
-            lookahead = true,     -- Automatically jump forward to textobj, similar to targets.vim
+            lookahead = true, -- Automatically jump forward to textobj, similar to targets.vim
             keymaps = {
                 -- You can use the capture groups defined in textobjects.scm
                 ['aa'] = '@parameter.outer',
@@ -33,7 +40,7 @@ require 'nvim-treesitter.configs'.setup {
         },
         move = {
             enable = true,
-            set_jumps = true,     -- whether to set jumps in the jumplist
+            set_jumps = true, -- whether to set jumps in the jumplist
             goto_next_start = {
                 [']m'] = '@function.outer',
                 [']]'] = '@class.outer',

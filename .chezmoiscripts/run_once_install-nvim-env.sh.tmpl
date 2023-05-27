@@ -1,8 +1,7 @@
-{{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
+{{ if (and (.nvim) (eq .chezmoi.os "linux")) -}}
 {{ $packages := list
 	"pynvim"
 -}}
-
 #!/bin/bash
 
 cd 

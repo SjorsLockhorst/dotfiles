@@ -1,6 +1,15 @@
 {{- $email := promptString "email" -}}
-{{- $server := promptBool "server" -}}
+{{- $zsh := promptBool "zsh" -}}
+{{- $nvim := promptBool "nvim" -}}
+{{- $include_wm := promptBool "include_wm" -}}
+{{- $data_science := promptBool "data_science" -}}
+{{- $gui_packages := promptBool "gui_packages" -}}
+
 
 [data]
     email = {{ $email | quote }}
-    server = {{ $server }}
+    zsh = {{ $zsh }}
+    nvim = {{ $nvim }}
+    has_wm = {{ $include_wm }}
+    data_science = {{ $data_science }}
+    gui_packages = {{ $gui_packages }}

@@ -1,7 +1,6 @@
-{{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
+{{ if (and (.data_science) (eq .chezmoi.os "linux")) -}}
 #!/bin/sh
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh
 rm miniconda.sh
-
 {{ end -}}

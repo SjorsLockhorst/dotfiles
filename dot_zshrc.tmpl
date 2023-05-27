@@ -101,10 +101,10 @@ source $ZSH/oh-my-zsh.sh
 # Set vi as editor
 set -o vi
 
-{{ if .server -}}
-export EDITOR=vim
-{{ else -}}
+{{ if .nvim -}}
 export EDITOR=nvim
+{{ else -}}
+export EDITOR=vim
 {{ end -}}
 
 if [[ -n $SSH_CONNECTION ]]; then

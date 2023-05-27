@@ -8,6 +8,7 @@ dependencies:
   - conda-forge::jupytext
   - conda-forge::jupyterlab
   - numpy
+  - scipy
   - pandas
   - matplotlib
   - seaborn

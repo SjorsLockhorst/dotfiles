@@ -1,15 +1,19 @@
-{{ if (and (not (.server)) (eq .chezmoi.os "linux")) -}}
+{{ if (and (.data_science) (eq .chezmoi.os "linux")) -}}
 #!/bin/zsh
 
+# environment.yml hash: {{ include "environment.yml" | sha256sum }}
 source ~/.zshrc
 
-conda env create -n analytics -f $CHEZMOI_SOURCE_DIR/environment.yml
+if ! conda env list | grep -q "analytics"; then
+	conda env create -n analytics -f $CHEZMOI_SOURCE_DIR/environment.yml
+else
+	conda env update -n analytics -f $CHEZMOI_SOURCE_DIR/environment.yml --prune
+fi
+
 conda activate analytics
 
 # Set theme
 jt -t oceans16
-
-
 # Install needed extensions for jupyter ascending
 jupyter nbextension install --py --sys-prefix jupyter_ascending
 jupyter nbextension     enable jupyter_ascending --sys-prefix --py
