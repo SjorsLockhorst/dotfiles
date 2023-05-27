@@ -34,7 +34,6 @@ vim.o.scrolloff = 8
 vim.o.updatetime=250
 vim.o.timeoutlen=500
 vim.wo.signcolumn = "yes"
-vim.o.colorcolumn = "88"
 vim.o.completeopt = "menuone,noselect"
 
 vim.o.clipboard = "unnamedplus"

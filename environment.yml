@@ -1,0 +1,16 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - notebook
+  - conda-forge::jupyterthemes
+  - conda-forge::jupytext
+  - conda-forge::jupyterlab
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - pip
+  - pip:
+    - jupyter_ascending
