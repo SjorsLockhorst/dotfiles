@@ -1,9 +1,6 @@
 {{ if (and (.zsh) (not (eq .chezmoi.os "darwin"))) -}}
 #!/bin/sh
 
-# Set ZSH as shell
-chsh -s /usr/bin/zsh
-
 # Make sure that user wants zsh and is not on Windows
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
 	export RUNZSH=${RUNZSH:-no}
