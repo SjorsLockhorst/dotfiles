@@ -26,8 +26,14 @@
     url = "https://github.com/tmux-plugins/tpm/archive/refs/heads/master.tar.gz"
     stripComponents = 1
 
-
 [".vim/autoload/plug.vim"]
     type = "file"
     url = "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim"
     refreshPeriod = "168h"
+
+{{ if (and (.plasma_i3) (eq .chezmoi.os "linux")) -}}
+[".themes/layan"]
+    type = "archive"
+    url = "https://github.com/vinceliuice/Layan-kde/archive/refs/tags/2022-02-13.tar.gz"
+    stripComponents = 1
+{{- end }}

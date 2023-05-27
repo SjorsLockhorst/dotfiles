@@ -130,6 +130,22 @@ if [ -n "$VIRTUAL_ENV" ]; then
 fi
 
 
+{{ if .data_science }}
+__conda_setup="$({{ joinPath .conda_dir "bin/conda" }} 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f {{ joinPath .conda_dir "etc/profile.d/conda.sh"}} ]; then
+        . {{ joinPath .conda_dir "etc/profile.d/conda.sh"}}
+    else
+        export PATH={{ joinPath .conda_dir "/bin:$PATH" }}
+    fi
+fi
+unset __conda_setup
+{{ end -}}
+
+
+
 alias open="xdg-open"
 alias update='sudo apt-get update && sudo apt-get upgrade'
 alias sl=ls

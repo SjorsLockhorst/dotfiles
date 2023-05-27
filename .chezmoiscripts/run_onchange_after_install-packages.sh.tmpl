@@ -25,6 +25,11 @@
 	"zsh"
 -}}
 
+{{ $plasma_i3 := list
+	"kde-full"
+	"i3"
+-}}
+
 #!/bin/sh
 # Add brave browser gpg
 {{ if .gui_packages -}}
@@ -41,6 +46,10 @@ sudo apt-get install -y {{ $gui_packages | join " " }}
 {{ end -}}
 {{ if .zsh -}}
 sudo apt-get install -y {{ $zsh | join " " }}
+{{ end -}}
+
+{{ if .plasma_i3 -}}
+sudo apt-get install -y {{ $plasma_i3 | join " " }}
 {{ end -}}
 
 {{ end -}}

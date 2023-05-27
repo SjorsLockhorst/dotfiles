@@ -1,0 +1,15 @@
+{{ if (and (.plasma_i3) (eq .chezmoi.osRelease.id "debian")) -}}
+#!/bin/bash
+DEST_PATH="/usr/share/xsessions/plasma-i3.desktop"
+if [ -r "$DEST_PATH" ]; then
+	echo "Configuration in path $DEST_PATH exist, leaving it unchanged."
+else
+	echo "Adding the contents:"
+	sudo tee -a $DEST_PATH < {{ joinPath .chezmoi.sourceDir "util/plasma-i3.desktop" | quote }} 
+	echo "to the file $DEST_PATH."
+fi
+
+bash ~/.themes/layan/install.sh
+lookandfeeltool -a 'com.github.vinceliuice.Layan'
+
+{{ end -}}

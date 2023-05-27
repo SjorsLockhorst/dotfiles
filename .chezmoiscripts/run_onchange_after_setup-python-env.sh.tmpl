@@ -1,16 +1,22 @@
 {{ if (and (.data_science) (eq .chezmoi.os "linux")) -}}
 #!/bin/zsh
 
-# environment.yml hash: {{ include "environment.yml" | sha256sum }}
+# Below comment makes sure that if environment.yml changes, this script recompiles env.
+# environment.yml hash: {{ include "util/environment.yml" | sha256sum }}
 source ~/.zshrc
 
-if ! conda env list | grep -q "analytics"; then
-	conda env create -n analytics -f $CHEZMOI_SOURCE_DIR/environment.yml
+ENV_NAME="analytics"
+ENV_PATH={{ joinPath .chezmoi.sourceDir "util/environment.yml" | quote }}
+
+if ! conda env list | grep -q "$ENV_NAME"; then
+	echo "Conda env $ENV_NAME not found, creating it."
+	conda env create -n $ENV_NAME -f $ENV_PATH
 else
-	conda env update -n analytics -f $CHEZMOI_SOURCE_DIR/environment.yml --prune
+	echo "Found changes in $ENV_PATH, or in this script, updating $ENV_NAME environment."
+	conda env update -n $ENV_NAME -f $ENV_PATH --prune
 fi
 
-conda activate analytics
+conda activate $ENV_NAME
 
 # Set theme
 jt -t oceans16
@@ -18,4 +24,5 @@ jt -t oceans16
 jupyter nbextension install --py --sys-prefix jupyter_ascending
 jupyter nbextension     enable jupyter_ascending --sys-prefix --py
 jupyter serverextension enable jupyter_ascending --sys-prefix --py
+
 {{ end -}}

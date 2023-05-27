@@ -1,7 +1,7 @@
 {{- $email := promptString "email" -}}
 {{- $zsh := promptBool "zsh" -}}
 {{- $nvim := promptBool "nvim" -}}
-{{- $include_wm := promptBool "include_wm" -}}
+{{- $plasma_i3 := promptBool "plasma_i3" -}}
 {{- $data_science := promptBool "data_science" -}}
 {{- $gui_packages := promptBool "gui_packages" -}}
 
@@ -10,6 +10,7 @@
     email = {{ $email | quote }}
     zsh = {{ $zsh }}
     nvim = {{ $nvim }}
-    has_wm = {{ $include_wm }}
+    plasma_i3 = {{ $plasma_i3 }}
     data_science = {{ $data_science }}
+    conda_dir = "~/miniconda3"
     gui_packages = {{ $gui_packages }}
