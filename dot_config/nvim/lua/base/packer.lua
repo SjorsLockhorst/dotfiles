@@ -97,7 +97,6 @@ return require('packer').startup(function(use)
 
 
     -- Jupyter notebook setup
-    use("goerz/jupytext.vim")
     use('jpalardy/vim-slime')
     use ('hanschen/vim-ipython-cell')
     use('bfredl/nvim-ipy')
