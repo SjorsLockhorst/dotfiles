@@ -37,4 +37,14 @@ vim.keymap.set('n', '<leader>bb', insertCellBelow)
 vim.keymap.set('n', '<leader>cm', ':IPythonCellToMarkdown<CR>')
 
 vim.keymap.set('n', '<leader>re', function() StartTmuxRepl("ipython3") end)
+vim.keymap.set('n', '<leader>jn', function() StartTmuxRepl("jupyter console --existing") end)
+vim.keymap.set("n", "<leader>jnq", function()
+    vim.cmd("SlimeSend1 quit(keep_kernel=True)")
+    vim.cmd("SlimeSend1 exit")
+
+end)
 vim.keymap.set('n', '<leader>rr', runAndNext)
+
+vim.keymap.set("n", "<leader>x", "<Plug>JupyterExecute")
+vim.keymap.set("n", "<leader>X", "<Plug>JupyterExecuteAll")
+vim.keymap.set("n", "<leader>r", "<Plug>JupyterRestart")

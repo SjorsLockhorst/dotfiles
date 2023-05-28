@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Script that takes a Jupyter Notebook as input, and creates:
+# a .sync.ipynb version that it opens with a jupyter notebook server
+# a .sync.py version that it gets using jupytext, opens this in nvim.
+
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 1 ]; then
+  echo "Usage: format-jupy <filename>.ipynb"
+  exit 1
+fi
+
+filename="$1"
+
+# Check if the file extension is ipynb
+if [[ "${filename##*.}" != "ipynb" ]]; then
+  echo "Invalid file extension. Only .ipynb files are allowed."
+  exit 1
+fi
+
+if [[ ! "$filename" == *.sync.ipynb ]]; then
+  # Generate the new filename with ".sync" prepended before the extension
+  new_filename="${filename%.*}.sync.${filename##*.}"
+
+  if [ ! -e "$new_filename" ]; then
+    # Copy the file with the new filename
+    cp "$filename" "$new_filename"
+  fi
+else
+  new_filename=$filename
+fi
+
+new_py_filename="${new_filename%.*}.py"
+
+if [ ! -e "$new_py_filename" ]; then
+  jupytext --set-formats ipynb,py:percent "$new_filename"
+fi
+
+echo "$new_filename"
+echo "$new_py_filename"
+
+tmux new-window -n "jupyter server" "jupyter notebook $new_filename"
+tmux select-window -p
+nvim $new_py_filename
