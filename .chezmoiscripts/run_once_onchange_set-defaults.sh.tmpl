@@ -1,0 +1,6 @@
+{{ if .gui_packages -}}
+#!/bin/sh
+
+sudo update-alternatives --set x-terminal-emulator $(which kitty)
+sudo update-alternatives --set x-www-browser $(which brave-browser-stable)
+{{ end -}}
