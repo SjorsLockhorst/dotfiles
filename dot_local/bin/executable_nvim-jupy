@@ -10,35 +10,40 @@ if [ "$#" -ne 1 ]; then
   exit 1
 fi
 
-filename="$1"
+jupy_filename="$1"
 
 # Check if the file extension is ipynb
-if [[ "${filename##*.}" != "ipynb" ]]; then
+if [[ "${jupy_filename##*.}" != "ipynb" ]]; then
   echo "Invalid file extension. Only .ipynb files are allowed."
   exit 1
 fi
 
-if [[ ! "$filename" == *.sync.ipynb ]]; then
+if [[ ! "$jupy_filename" == *.sync.ipynb ]]; then
   # Generate the new filename with ".sync" prepended before the extension
-  new_filename="${filename%.*}.sync.${filename##*.}"
+  jupy_sync_filename="${jupy_filename%.*}.sync.${jupy_filename##*.}"
 
-  if [ ! -e "$new_filename" ]; then
+  if [ ! -e "$jupy_sync_filename" ]; then
     # Copy the file with the new filename
-    cp "$filename" "$new_filename"
+    ln -s "$jupy_filename" "$jupy_sync_filename"
   fi
 else
-  new_filename=$filename
+  jupy_sync_filename=$jupy_sync_filename
 fi
 
-new_py_filename="${new_filename%.*}.py"
+py_filename="${jupy_filename%.*}.py"
+py_sync_filename="${py_filename%.*}.sync.${py_filename##*.}"
 
-if [ ! -e "$new_py_filename" ]; then
-  jupytext --set-formats ipynb,py:percent "$new_filename"
+if [ ! -e "$py_filename" ]; then
+  jupytext --set-formats ipynb,py:percent "$jupy_filename"
 fi
 
-echo "$new_filename"
-echo "$new_py_filename"
+if [ ! -e "$py_sync_filename" ]; then
+  ln -s "$py_filename" "$py_sync_filename"
+fi
 
-tmux new-window -n "jupyter server" "jupyter notebook $new_filename"
-tmux select-window -p
-nvim $new_py_filename
+echo "$jupy_sync_filename"
+echo "$py_sync_filename"
+
+tmux new-window -n "jupyter server" "jupyter notebook $jupy_sync_filename"
+tmux last-window
+nvim $py_sync_filename
