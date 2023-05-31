@@ -1,9 +1,3 @@
--- IPythonCell definitions of what is a cell
-vim.g.ipython_cell_tag = { "# |%%--%%|", "# %%", "#%%", "# <codecell>" }
-
--- Set cell definition for vim-ipy
-vim.g.ipy_celldef = "^# %%"
-
 vim.g.slime_target = "tmux"
 vim.g.slime_paste_file = vim.fn.expand("$HOME/.slime_paste")
 

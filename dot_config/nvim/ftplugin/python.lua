@@ -3,6 +3,12 @@ vim.o.colorcolumn = "88"
 vim.b.slime_bracketed_paste = 1
 vim.b.slime_cell_delimiter = "# %%"
 
+-- IPythonCell definitions of what is a cell
+vim.g.ipython_cell_tag = { "# |%%--%%|", "# %%", "#%%", "# <codecell>" }
+
+-- Set cell definition for vim-ipy
+vim.g.ipy_celldef = "^# %%"
+
 -- IPythonCell movements
 vim.keymap.set('n', '[c', ':IPythonCellPrevCell<CR>')
 vim.keymap.set('n', ']c', ':IPythonCellNextCell<CR>')
