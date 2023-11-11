@@ -2,7 +2,7 @@
 ["bin/nvim"]
     type = "file"
     executable = true
-    url = "https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage"
+    url = "https://github.com/neovim/neovim/releases/download/stable/nvim.appimage"
     exact = true
 
 [".local/share/nvim/site/pack/packer/start/packer.nvim"]
