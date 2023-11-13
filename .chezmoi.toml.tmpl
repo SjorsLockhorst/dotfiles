@@ -2,8 +2,9 @@
 {{- $zsh := promptBool "zsh" -}}
 {{- $nvim := promptBool "nvim" -}}
 {{- $plasma_i3 := promptBool "plasma_i3" -}}
-{{- $data_science := promptBool "data_science" -}}
 {{- $gui_packages := promptBool "gui_packages" -}}
+{{- $data_science := promptBool "data_science" -}}
+{{- $memo2 := promptBool "memo2" -}}
 
 
 [data]
@@ -11,6 +12,7 @@
     zsh = {{ $zsh }}
     nvim = {{ $nvim }}
     plasma_i3 = {{ $plasma_i3 }}
+    gui_packages = {{ $gui_packages }}
     data_science = {{ $data_science }}
     conda_dir = "~/miniconda3"
-    gui_packages = {{ $gui_packages }}
+    memo2 = {{ $memo2 }}
