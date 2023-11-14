@@ -121,10 +121,8 @@ return require('packer').startup(function(use)
 	run = function() vim.fn["mkdp#util#install"]() end,
     })
     use("untitled-ai/jupyter_ascending.vim")
-    -- Unused, from old setup
-    -- use('jiangmiao/auto-pairs')
-    -- Web programming
-    -- use('alvan/vim-closetag')
-    -- use('AndrewRadev/tagalong.vim')
+
+    -- Auto close
+    use("m4xshen/autoclose.nvim")
 
 end)
