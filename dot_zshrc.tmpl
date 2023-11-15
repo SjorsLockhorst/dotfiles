@@ -163,3 +163,9 @@ alias update='sudo apt-get update && sudo apt-get upgrade'
 alias sl=ls
 alias lsa='ls -lah'
 alias unittest="python3 -m unittest discover"
+
+{{ if .nvim -}}
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+{{- end }}
