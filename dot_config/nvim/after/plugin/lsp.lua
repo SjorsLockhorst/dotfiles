@@ -7,7 +7,6 @@ require('neodev').setup({
 require("fidget").setup()
 
 local lsp = require('lsp-zero')
-local nvim_lsp = require('lspconfig')
 
 
 lsp.preset('recommended')
@@ -54,7 +53,7 @@ lsp.setup_nvim_cmp({
 })
 
 -- Make sure mappings are only used when an lsp is available
-local on_attach = lsp.on_attach(function(client, bufnr)
+lsp.on_attach(function(_, bufnr)
   local opts = { buffer = bufnr, remap = false }
 
   vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
@@ -83,16 +82,7 @@ local on_attach = lsp.on_attach(function(client, bufnr)
     vim.lsp.buf.format()
   end, { desc = 'Format current buffer with LSP' })
 
-  -- Init tailwindcss colors
-  if vim.bo[bufnr].filetype == 'vue' then
-    require("tailwindcss-colors").buf_attach(bufnr)
-  end
 end)
-
-nvim_lsp["tailwindcss"].setup({
-  -- other settings --
-  on_attach = on_attach,
-})
 
 lsp.nvim_workspace()
 lsp.setup()
@@ -103,10 +93,3 @@ vim.diagnostic.config({
 
 vim.keymap.set("n", "<leader>f", vim.lsp.buf.format)
 vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename)
-
--- -- Remove weird panda parameter emoji that's unsupported
--- local cfg = {
---   hint_prefix = "", -- Panda for parameter, NOTE: for the terminal not support emoji, might crash
--- }
---
--- require('lsp_signature').setup(cfg)

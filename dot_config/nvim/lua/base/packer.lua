@@ -101,17 +101,6 @@ return require('packer').startup(function(use)
     -- Codicons for nvim dap ui
     use("mortepau/codicons.nvim")
 
-
-    use {
-	"themaxmarchuk/tailwindcss-colors.nvim",
-	-- load only on require("tailwindcss-colors")
-	module = "tailwindcss-colors",
-	-- run the setup function after plugin is loaded 
-	config = function ()
-	    -- pass config options here (or nothing to use defaults)
-	    require("tailwindcss-colors").setup()
-	end
-    }
     use("norcalli/nvim-colorizer.lua")
 
     use {"ellisonleao/glow.nvim", config = function() require("glow").setup() end}
