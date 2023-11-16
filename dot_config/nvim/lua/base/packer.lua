@@ -15,7 +15,7 @@ return require('packer').startup(function(use)
 
     -- Syntax parsing
     use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
-    use("christianchiarulli/nvcode-color-schemes.vim")
+    use('shaunsingh/nord.nvim')
 
     -- Auto open and close tags with treesitter
     use('windwp/nvim-ts-autotag')
