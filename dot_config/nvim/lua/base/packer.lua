@@ -34,7 +34,9 @@ return require('packer').startup(function(use)
     use('tpope/vim-rhubarb')
     use('lewis6991/gitsigns.nvim')
     -- Easy surrounding of brackents, parentheses etc.
-	use('tpope/vim-surround')
+    use('tpope/vim-surround')
+
+    use("tpope/vim-repeat")
 
     -- Tmux integration
     use('tmux-plugins/vim-tmux-focus-events')
