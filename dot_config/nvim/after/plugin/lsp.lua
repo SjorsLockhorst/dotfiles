@@ -5,7 +5,6 @@ require('neodev').setup({
   library = { plugins = { "nvim-dap-ui" }, type = true }
 })
 require("fidget").setup()
-
 local lsp = require('lsp-zero')
 local luasnip = require("luasnip")
 
@@ -45,11 +44,16 @@ lsp.configure("ruff_lsp", {
 -- Change default lsp mappings
 local cmp = require('cmp')
 local cmp_mappings = lsp.defaults.cmp_mappings({
+  -- Disable certain defaults
   ["<CR>"] = cmp.config.disable,
   ['<Tab>'] = cmp.config.disable,
   ['<S-Tab>'] = cmp.config.disable,
-  ['<C-y>'] = cmp.mapping.confirm({ select = true }),
-  ["<C-Space>"] = cmp.mapping.complete(),
+
+  -- Scrolling through docs
+  ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+  ['<C-f>'] = cmp.mapping.scroll_docs(4),
+
+  -- Select next option / jump to next position in snippet
   ["<C-n>"] = cmp.mapping(function(fallback)
     if cmp.visible() then
       cmp.select_next_item()
@@ -64,6 +68,7 @@ local cmp_mappings = lsp.defaults.cmp_mappings({
     end
   end, { "i", "s" }),
 
+  -- Select prev option / jumpt to prev position in snippet
   ["<C-p>"] = cmp.mapping(function(fallback)
     if cmp.visible() then
       cmp.select_prev_item()
@@ -73,7 +78,8 @@ local cmp_mappings = lsp.defaults.cmp_mappings({
       fallback()
     end
   end, { "i", "s" }),
-
+  ['<C-y>'] = cmp.mapping.confirm({ select = true }),
+  ["<C-Space>"] = cmp.mapping.complete(),
 })
 
 
