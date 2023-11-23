@@ -20,8 +20,6 @@
 sudo apt-get update
 sudo apt-get install -y {{ $packages | join " " }}
 
-curl https://pyenv.run | bash
-
 # Install Poetry
 curl -sSL https://install.python-poetry.org | python3 -
 {{- end }}

@@ -17,6 +17,15 @@ return require('packer').startup(function(use)
     use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
     use('shaunsingh/nord.nvim')
 
+    -- Headlines for markdown
+    use {
+        "lukas-reineke/headlines.nvim",
+        after = "nvim-treesitter",
+        config = function()
+            require("headlines").setup()
+        end,
+    }
+
     -- Auto open and close tags with treesitter
     use('windwp/nvim-ts-autotag')
 
