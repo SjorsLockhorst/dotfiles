@@ -125,4 +125,7 @@ return require('packer').startup(function(use)
     -- Auto close
     use("m4xshen/autoclose.nvim")
 
+    -- Docker dev container
+    use("https://codeberg.org/esensar/nvim-dev-container")
+
 end)
