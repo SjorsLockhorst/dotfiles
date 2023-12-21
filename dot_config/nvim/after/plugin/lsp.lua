@@ -30,6 +30,20 @@ lsp.configure("pylsp", {
     }
   }
 })
+lsp.configure("vetur", {
+  format = {
+    enable = false
+  }
+})
+lsp.configure("eslint", {
+  filetypes = {"vue"},
+  on_attach = function(_, bufnr)
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      buffer = bufnr,
+      command = "EslintFixAll",
+    })
+  end,
+})
 
 local function FixAll()
   vim.lsp.buf.code_action({ context = { only = { "source.fixAll" } }, apply = true })
