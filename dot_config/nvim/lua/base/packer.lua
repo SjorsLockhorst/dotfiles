@@ -125,5 +125,8 @@ return require('packer').startup(function(use)
     -- Auto close
     use("m4xshen/autoclose.nvim")
 
+    -- Latex
+    use("lervag/vimtex")
+
 
 end)

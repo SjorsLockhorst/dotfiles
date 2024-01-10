@@ -4,6 +4,7 @@
 {{- $plasma_i3 := promptBool "plasma_i3" -}}
 {{- $gui_packages := promptBool "gui_packages" -}}
 {{- $data_science := promptBool "data_science" -}}
+{{- $latex := promptBool "latex" -}}
 {{- $memo2 := promptBool "memo2" -}}
 
 
@@ -16,3 +17,4 @@
     data_science = {{ $data_science }}
     conda_dir = "~/miniconda3"
     memo2 = {{ $memo2 }}
+    latex = {{ $latex }}
