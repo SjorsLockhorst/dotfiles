@@ -5,6 +5,7 @@
     url = "https://github.com/neovim/neovim/releases/download/stable/nvim.appimage"
     exact = true
 
+
 [".local/share/nvim/site/pack/packer/start/packer.nvim"]
     type = "git-repo"
     url = "https://github.com/wbthomason/packer.nvim"
@@ -19,6 +20,15 @@
     command = "tar"
     args = ["--extract", "--file", "/dev/stdin", "--gzip", "--to-stdout", "pomodoro"]
 
+{{- end }}
+
+{{ if .obsidian -}}
+{{ $obsidianVersion := "1.5.3" -}}
+["bin/obsidian"]
+    type = "file"
+    executable = true
+    url = "https://github.com/obsidianmd/obsidian-releases/releases/download/v{{ $obsidianVersion }}/Obsidian-{{ $obsidianVersion }}.AppImage"
+    exact = true
 {{- end }}
 
 [".tmux/plugins/tpm/"]

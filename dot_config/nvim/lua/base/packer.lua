@@ -8,125 +8,140 @@ return require('packer').startup(function(use)
 	use('wbthomason/packer.nvim')
 	use {
 		'nvim-telescope/telescope.nvim', tag = '0.1.4',
-		requires = { {'nvim-lua/plenary.nvim'} }
+		requires = { { 'nvim-lua/plenary.nvim' } }
 	}
-    -- Fuzzy Finder Algorithm which requires local dependencies to be built. Only load if `make` is available
-    use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+	-- Fuzzy Finder Algorithm which requires local dependencies to be built. Only load if `make` is available
+	use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
 
-    -- Syntax parsing
-    use('nvim-treesitter/nvim-treesitter', {run = ':TSUpdate'})
-    use('shaunsingh/nord.nvim')
+	-- Syntax parsing
+	use('nvim-treesitter/nvim-treesitter', { run = ':TSUpdate' })
+	use('shaunsingh/nord.nvim')
 
-    -- Headlines for markdown
-    use {
-        "lukas-reineke/headlines.nvim",
-        after = "nvim-treesitter",
-        config = function()
-            require("headlines").setup()
-        end,
-    }
+	-- Headlines for markdown
+	use {
+		"lukas-reineke/headlines.nvim",
+		after = "nvim-treesitter",
+		config = function()
+			require("headlines").setup()
+		end,
+	}
 
-    -- Auto open and close tags with treesitter
-    use('windwp/nvim-ts-autotag')
+	-- Auto open and close tags with treesitter
+	use('windwp/nvim-ts-autotag')
 
-    -- Syntax for chezmoi specific files
-    use('alker0/chezmoi.vim')
+	-- Syntax for chezmoi specific files
+	use('alker0/chezmoi.vim')
 
-    -- Set a command to map to a specific file
+	-- Set a command to map to a specific file
 	use('ThePrimeagen/harpoon')
 
-    -- An undo tree for more elaborate undo's
+	-- An undo tree for more elaborate undo's
 	use('mbbill/undotree')
 
-    -- Vim Git integration
+	-- Vim Git integration
 	use('tpope/vim-fugitive')
-    use('tpope/vim-rhubarb')
-    use('lewis6991/gitsigns.nvim')
-    -- Easy surrounding of brackents, parentheses etc.
-    use('tpope/vim-surround')
+	use('tpope/vim-rhubarb')
+	use('lewis6991/gitsigns.nvim')
+	-- Easy surrounding of brackents, parentheses etc.
+	use('tpope/vim-surround')
 
-    use("tpope/vim-repeat")
+	use("tpope/vim-repeat")
 
-    -- Tmux integration
-    use('tmux-plugins/vim-tmux-focus-events')
-    use('christoomey/vim-tmux-navigator')
+	-- Tmux integration
+	use('tmux-plugins/vim-tmux-focus-events')
+	use('christoomey/vim-tmux-navigator')
 
-    -- Shortcuts for comments
-    use('numToStr/Comment.nvim')
+	-- Shortcuts for comments
+	use('numToStr/Comment.nvim')
 
-    -- Enable an airline
-    use('nvim-lualine/lualine.nvim')
+	-- Enable an airline
+	use('nvim-lualine/lualine.nvim')
 
-    -- Add identation guides even on blank lines
-    use('lukas-reineke/indent-blankline.nvim')
+	-- Add identation guides even on blank lines
+	use('lukas-reineke/indent-blankline.nvim')
 
-    -- Detect tabstop and shiftwidth automatically
-    use('tpope/vim-sleuth')
+	-- Detect tabstop and shiftwidth automatically
+	use('tpope/vim-sleuth')
 
 
-    -- Language Server Protocol
+	-- Language Server Protocol
 	use {
 		'VonHeikemen/lsp-zero.nvim',
 		branch = 'v1.x',
 		requires = {
 			-- LSP Support
-			{'neovim/nvim-lspconfig'},
+			{ 'neovim/nvim-lspconfig' },
 
-            -- Mason, handler for installing external LSP's, linters etc.
-			{'williamboman/mason.nvim'},
-			{'williamboman/mason-lspconfig.nvim'},
+			-- Mason, handler for installing external LSP's, linters etc.
+			{ 'williamboman/mason.nvim' },
+			{ 'williamboman/mason-lspconfig.nvim' },
 
 			-- Autocompletion dependencies
-			{'hrsh7th/nvim-cmp'},
-			{'hrsh7th/cmp-nvim-lsp'},
-			{'hrsh7th/cmp-buffer'},
-			{'hrsh7th/cmp-path'},
-			{'saadparwaiz1/cmp_luasnip'},
-			{'hrsh7th/cmp-nvim-lua'},
+			{ 'hrsh7th/nvim-cmp' },
+			{ 'hrsh7th/cmp-nvim-lsp' },
+			{ 'hrsh7th/cmp-buffer' },
+			{ 'hrsh7th/cmp-path' },
+			{ 'saadparwaiz1/cmp_luasnip' },
+			{ 'hrsh7th/cmp-nvim-lua' },
 
 			-- Snippets
-			{'L3MON4D3/LuaSnip'},
-			{'rafamadriz/friendly-snippets'},
+			{ 'L3MON4D3/LuaSnip' },
+			{ 'rafamadriz/friendly-snippets' },
 
-            -- Useful status updates for LSP
-            {'j-hui/fidget.nvim'},
+			-- Useful status updates for LSP
+			{ 'j-hui/fidget.nvim' },
 
-            -- Additional Lua configuration
-            {'folke/neodev.nvim'},
-            {'ray-x/lsp_signature.nvim'}
+			-- Additional Lua configuration
+			{ 'folke/neodev.nvim' },
+			{ 'ray-x/lsp_signature.nvim' }
 		}
 	}
 
 
-    -- Jupyter notebook setup
-    use('jpalardy/vim-slime')
-    use ('hanschen/vim-ipython-cell')
-    use('bfredl/nvim-ipy')
+	-- Jupyter notebook setup
+	use('jpalardy/vim-slime')
+	use('hanschen/vim-ipython-cell')
+	use('bfredl/nvim-ipy')
 
-    -- Debugging
-    use("mfussenegger/nvim-dap")
-    use("mfussenegger/nvim-dap-python")
-    use("rcarriga/nvim-dap-ui")
-    use("jay-babu/mason-nvim-dap.nvim")
+	-- Debugging
+	use("mfussenegger/nvim-dap")
+	use("mfussenegger/nvim-dap-python")
+	use("rcarriga/nvim-dap-ui")
+	use("jay-babu/mason-nvim-dap.nvim")
 
-    -- Codicons for nvim dap ui
-    use("mortepau/codicons.nvim")
+	-- Codicons for nvim dap ui
+	use("mortepau/codicons.nvim")
 
-    use("norcalli/nvim-colorizer.lua")
+	use("norcalli/nvim-colorizer.lua")
 
-    use {"ellisonleao/glow.nvim", config = function() require("glow").setup() end}
+	use { "ellisonleao/glow.nvim", config = function() require("glow").setup() end }
 
-    use({
-	"iamcco/markdown-preview.nvim",
-	run = function() vim.fn["mkdp#util#install"]() end,
-    })
-    use("untitled-ai/jupyter_ascending.vim")
+	use({
+		"iamcco/markdown-preview.nvim",
+		run = function() vim.fn["mkdp#util#install"]() end,
+	})
+	use("untitled-ai/jupyter_ascending.vim")
 
-    -- Auto close
-    use("m4xshen/autoclose.nvim")
+	-- Auto close
+	use("m4xshen/autoclose.nvim")
 
-    -- Latex
-    use("lervag/vimtex")
+	-- Latex
+	use("lervag/vimtex")
 
-
+	-- Navigate file as a buffer
+	use({
+		"stevearc/oil.nvim",
+		config = function()
+			require("oil").setup()
+		end,
+	})
+	use 'rcarriga/nvim-notify'
+	use({
+		"epwalsh/pomo.nvim",
+		tag = "*", -- Recommended, use latest release instead of latest commit
+		requires = {
+			-- Optional, but highly recommended if you want to use the "Default" timer
+			"rcarriga/nvim-notify",
+		},
+	})
 end)

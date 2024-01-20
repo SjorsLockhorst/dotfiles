@@ -6,6 +6,7 @@
 {{- $data_science := promptBool "data_science" -}}
 {{- $latex := promptBool "latex" -}}
 {{- $memo2 := promptBool "memo2" -}}
+{{- $obsidian := promptBool "obsidian" -}}
 
 
 [data]
@@ -18,3 +19,4 @@
     conda_dir = "~/miniconda3"
     memo2 = {{ $memo2 }}
     latex = {{ $latex }}
+    obsidian = {{ $obsidian }}
