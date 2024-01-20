@@ -9,9 +9,8 @@ require("pomo").setup(
 					-- continuously displayed. If you only want a pop-up notification when the timer starts
 					-- and finishes, set this to false.
 					sticky = true,
-
-					title_icon = "⏳",
-					text_icon = "⏱️",
+					title_icon = "󱎫",
+					text_icon = "󰄉",
 				},
 			},
 		}

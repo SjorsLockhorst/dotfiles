@@ -20,7 +20,7 @@ require('lualine').setup {
           return ""
         end
 
-        return "⏱️" .. tostring(timer)
+        return "󰄉 " .. tostring(timer)
       end,
       "encoding",
       "fileformat",
