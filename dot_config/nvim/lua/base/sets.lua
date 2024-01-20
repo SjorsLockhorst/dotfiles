@@ -39,6 +39,8 @@ vim.o.completeopt = "menuone,noselect"
 vim.o.clipboard = "unnamedplus"
 vim.g.python3_host_prog = "~/nvim-env/bin/python3"
 
+vim.o.conceallevel = 1
+
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
 local highlight_group = vim.api.nvim_create_augroup('YankHighlight', { clear = true })
