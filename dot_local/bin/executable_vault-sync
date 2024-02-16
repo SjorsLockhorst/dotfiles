@@ -1,0 +1,3 @@
+#!/bin/sh
+
+chezmoi add --encrypt ~/vaults/personal/.obsidian
