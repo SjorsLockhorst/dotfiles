@@ -1,0 +1,7 @@
+#!/bin/sh
+{{ if .obsidian -}}
+cd ${HOME}/vaults/personal
+git init
+git remote add origin git@github.com:SjorsLockhorst/personal-notes.git
+git pull origin main
+{{ end -}}
