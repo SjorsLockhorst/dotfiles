@@ -1,5 +1,5 @@
 {{ if (and (.nvim) (eq .chezmoi.os "linux")) -}}
-["bin/nvim"]
+[".local/bin/nvim"]
     type = "file"
     executable = true
     url = "https://github.com/neovim/neovim/releases/download/stable/nvim.appimage"
@@ -16,11 +16,11 @@
     url = "https://github.com/ryanoasis/nerd-fonts/releases/download/v{{ $nerdFontRelease }}/{{ .nerd_font }}.zip"
 
 {{ $pomodoroVersion := "0.3.0" -}}
-["bin/pomodoro"]
+[".local/bin/pomodoro"]
     type = "file"
     url = "https://github.com/open-pomodoro/openpomodoro-cli/releases/download/v{{ $pomodoroVersion }}/openpomodoro-cli_{{ $pomodoroVersion }}_{{ .chezmoi.os }}_{{ .chezmoi.arch }}.tar.gz"
     executable = true
-    ["bin/pomodoro".filter]
+    [".local/bin/pomodoro".filter]
     command = "tar"
     args = ["--extract", "--file", "/dev/stdin", "--gzip", "--to-stdout", "pomodoro"]
 
@@ -28,7 +28,7 @@
 
 {{ if .obsidian -}}
 {{ $obsidianVersion := "1.5.3" -}}
-["bin/obsidian"]
+[".local/bin/obsidian"]
     type = "file"
     executable = true
     url = "https://github.com/obsidianmd/obsidian-releases/releases/download/v{{ $obsidianVersion }}/Obsidian-{{ $obsidianVersion }}.AppImage"

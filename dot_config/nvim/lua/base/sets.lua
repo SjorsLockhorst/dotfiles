@@ -68,3 +68,9 @@ if vim.fn.has("wsl") == 1 then
     }
 end
 
+-- Made cvc use c as filetype
+vim.filetype.add({
+    extension = {
+        cvc = "c",
+    },
+})
