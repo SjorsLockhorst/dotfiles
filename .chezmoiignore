@@ -5,3 +5,8 @@ key.txt.age
 {{ if (not .plasma_i3) -}}
 .xsessionrc
 {{ end -}}
+
+{{ if (not .obsidian) -}}
+./applications/obsidian.desktop
+./applications/mimeapps.list
+{{ end -}}

@@ -1,0 +1,4 @@
+#!/bin/sh
+{{ if (and (.obsidian) (eq .chezmoi.os "linux")) -}}
+update-desktop-database ~/.local/share/applications/
+{{ end -}}
