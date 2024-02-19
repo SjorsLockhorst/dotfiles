@@ -154,4 +154,5 @@ return require('packer').startup(function(use)
 			-- see below for full list of optional dependencies 👇
 		},
 	})
+	use("nvim-tree/nvim-web-devicons")
 end)
