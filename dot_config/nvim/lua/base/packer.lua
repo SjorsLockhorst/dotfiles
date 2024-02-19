@@ -17,15 +17,6 @@ return require('packer').startup(function(use)
 	use('nvim-treesitter/nvim-treesitter', { run = ':TSUpdate' })
 	use('shaunsingh/nord.nvim')
 
-	-- Headlines for markdown
-	use {
-		"lukas-reineke/headlines.nvim",
-		after = "nvim-treesitter",
-		config = function()
-			require("headlines").setup()
-		end,
-	}
-
 	-- Auto open and close tags with treesitter
 	use('windwp/nvim-ts-autotag')
 
@@ -120,6 +111,8 @@ return require('packer').startup(function(use)
 		"iamcco/markdown-preview.nvim",
 		run = function() vim.fn["mkdp#util#install"]() end,
 	})
+	use({"lukas-reineke/headlines.nvim", tag="v3.3.4"})
+
 	use("untitled-ai/jupyter_ascending.vim")
 
 	-- Auto close
