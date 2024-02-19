@@ -36,7 +36,7 @@ lsp.configure("vetur", {
   }
 })
 lsp.configure("eslint", {
-  filetypes = {"vue"},
+  filetypes = { "vue" },
   on_attach = function(_, bufnr)
     vim.api.nvim_create_autocmd("BufWritePre", {
       buffer = bufnr,
@@ -116,7 +116,7 @@ lsp.on_attach(function(_, bufnr)
   vim.keymap.set("n", "<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, opts)
 
   vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
-  vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, opts)
+  vim.keymap.set("i", "<C-h>", vim.lsp.buf.signature_help, { buffer = bufnr, remap = true })
 
   -- Lesser used LSP functionality
   vim.keymap.set("n", 'gD', vim.lsp.buf.declaration, opts)
