@@ -68,9 +68,20 @@ if vim.fn.has("wsl") == 1 then
     }
 end
 
+-- CiviC stuffs
 -- Made cvc use c as filetype
 vim.filetype.add({
     extension = {
         cvc = "c",
     },
+})
+
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = "*.cvc",
+  callback = function()
+    vim.bo.tabstop = 4
+    vim.bo.shiftwidth = 4
+    vim.bo.softtabstop = 4
+    vim.bo.expandtab = true
+  end,
 })
