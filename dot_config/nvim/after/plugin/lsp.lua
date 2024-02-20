@@ -142,3 +142,14 @@ vim.keymap.set("n", "<leader>f", vim.lsp.buf.format)
 vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename)
 
 require("luasnip.loaders.from_vscode").lazy_load()
+
+local s = luasnip.snippet
+local t = luasnip.text_node
+local i = luasnip.insert_node
+
+luasnip.add_snippets("markdown", {
+  s("task", {
+    t("- [ ] "),
+    i(1, "Task"),
+  }),
+}, { key = "all" })
