@@ -76,8 +76,9 @@ vim.filetype.add({
     },
 })
 
+-- Coconut stuffs
 vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
-  pattern = "*.cvc",
+  pattern = "*.cnn",
   callback = function()
     vim.bo.tabstop = 4
     vim.bo.shiftwidth = 4
