@@ -72,7 +72,7 @@ return require('packer').startup(function(use)
 			{ 'hrsh7th/cmp-nvim-lsp' },
 			{ 'hrsh7th/cmp-buffer' },
 			{ 'hrsh7th/cmp-path' },
-			{ 'saadparwaiz1/cmp_luasnip' },
+			{ 'saadparwaiz1/cmp_luasnip'},
 			{ 'hrsh7th/cmp-nvim-lua' },
 
 			-- Snippets
@@ -87,7 +87,8 @@ return require('packer').startup(function(use)
 			{ 'ray-x/lsp_signature.nvim' }
 		}
 	}
-
+	-- More snippets
+	use("rafamadriz/friendly-snippets")
 
 	-- Jupyter notebook setup
 	use('jpalardy/vim-slime')
@@ -111,7 +112,7 @@ return require('packer').startup(function(use)
 		"iamcco/markdown-preview.nvim",
 		run = function() vim.fn["mkdp#util#install"]() end,
 	})
-	use({"lukas-reineke/headlines.nvim", tag="v3.3.4"})
+	use({ "lukas-reineke/headlines.nvim", tag = "v3.3.4" })
 
 	use("untitled-ai/jupyter_ascending.vim")
 

@@ -96,7 +96,6 @@ local cmp_mappings = lsp.defaults.cmp_mappings({
   ["<C-Space>"] = cmp.mapping.complete(),
 })
 
-
 lsp.setup_nvim_cmp({
   mapping = cmp_mappings
 })
@@ -141,3 +140,5 @@ vim.diagnostic.config({
 
 vim.keymap.set("n", "<leader>f", vim.lsp.buf.format)
 vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename)
+
+require("luasnip.loaders.from_vscode").lazy_load()
