@@ -73,16 +73,30 @@ end
 vim.filetype.add({
     extension = {
         cvc = "c",
+        ccn = "c"
     },
 })
 
--- Coconut stuffs
-vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
-  pattern = {"*.ccn", "*.c"},
-  callback = function()
+local function set_indentation_4 ()
     vim.bo.tabstop = 4
     vim.bo.shiftwidth = 4
     vim.bo.softtabstop = 4
     vim.bo.expandtab = true
+end
+
+-- Coconut stuffs
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = {"*.ccn", "*.cvc"},
+  callback = function()
+    set_indentation_4()
+    vim.diagnostic.disable()
+  end,
+})
+
+-- C set indentation 4
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = {"*.c"},
+  callback = function()
+    set_indentation_4()
   end,
 })
