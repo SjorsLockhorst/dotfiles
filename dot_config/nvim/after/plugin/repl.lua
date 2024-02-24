@@ -13,8 +13,16 @@ vim.g.slime_default_config = {
 }
 vim.g.slime_dont_ask_default = 1
 
-function StartTmuxRepl(repl_command)
+function OpenTmuxRepl(repl_command)
   vim.cmd("silent !tmux split-window -h\\; last-pane") -- Create a vertical split in Tmux
+  ReplSend(repl_command)
+end
+
+function CloseTmuxRepl()
+  vim.cmd("silent !tmux kill-pane -t {top-right}")
+end
+
+function ReplSend(repl_command)
   vim.cmd(string.format("SlimeSend1 %s", repl_command))
 end
 
