@@ -54,7 +54,7 @@ vim.keymap.set("n", "<leader>jnq", function()
     vim.cmd("SlimeSend1 quit(keep_kernel=True)")
     vim.cmd("SlimeSend1 exit")
 end)
-vim.keymap.set('n', '<leader>ss', runAndNext)
+vim.keymap.set('n', '<leader>S', runAndNext)
 
 vim.keymap.set("n", "<leader>x", "<Plug>JupyterExecute")
 vim.keymap.set("n", "<leader>X", "<Plug>JupyterExecuteAll")

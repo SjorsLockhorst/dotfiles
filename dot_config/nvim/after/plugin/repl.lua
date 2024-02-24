@@ -4,7 +4,7 @@ vim.g.slime_paste_file = vim.fn.expand("$HOME/.slime_paste")
 vim.keymap.set("n", "<leader>l", "<Plug>SlimeLineSend")
 vim.keymap.set("v", "<leader>s", "<Plug>SlimeRegionSend")
 vim.keymap.set("n", "<leader>s", "<Plug>SlimeSendCell")
-vim.keymap.set('n', '<leader>sf', ':%SlimeSend<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '<leader>ss', ':%SlimeSend<CR>', { noremap = true, silent = true })
 
 
 -- always send text to the top-right pane in the current tmux tab without asking
