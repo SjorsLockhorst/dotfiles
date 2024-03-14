@@ -39,7 +39,6 @@ return require('packer').startup(function(use)
 	use("tpope/vim-repeat")
 
 	-- Tmux integration
-	use('tmux-plugins/vim-tmux-focus-events')
 	use('christoomey/vim-tmux-navigator')
 
 	-- Shortcuts for comments
@@ -72,7 +71,7 @@ return require('packer').startup(function(use)
 			{ 'hrsh7th/cmp-nvim-lsp' },
 			{ 'hrsh7th/cmp-buffer' },
 			{ 'hrsh7th/cmp-path' },
-			{ 'saadparwaiz1/cmp_luasnip'},
+			{ 'saadparwaiz1/cmp_luasnip' },
 			{ 'hrsh7th/cmp-nvim-lua' },
 
 			-- Snippets
@@ -149,4 +148,5 @@ return require('packer').startup(function(use)
 		},
 	})
 	use("nvim-tree/nvim-web-devicons")
+	use("mechatroner/rainbow_csv")
 end)

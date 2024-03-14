@@ -1,0 +1,272 @@
+---
+- name: Create a new backup device on Hetzner Storage Box
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    hetzner_storage_box_port: 23
+    hetzner_storage_box_user: "{{ lookup('env', 'HETZNER_ACCOUNT_NUMBER') }}"
+    hetzner_storage_box_host: ".your-storagebox.de"
+    tmp_ssh_key_path: "/tmp/storagebox-backup"
+    ssh_key_path: "/home/borgbackup/.ssh/storagebox-backup"
+    authorized_keys_content: "command=\"borg serve --restrict-to-repository /home/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
+    repo_url: "ssh://{{ hetzner_storage_box_user }}-sub{{ connection_number }}@{{ hetzner_storage_box_user }}-sub{{ connection_number }}{{ hetzner_storage_box_host }}:23/./repo"
+
+  tasks:
+    - name: Install BorgBackup package
+      apt:
+        name: borgbackup
+        state: present
+        update_cache: yes
+      become: true
+
+    - name: Add borgbackup user
+      user:
+        name: borgbackup
+        createhome: yes
+        groups: sudo
+        append: yes
+        state: present
+      become: true
+
+    - name: Add sudoers file for borgbackup user
+      copy:
+        dest: /etc/sudoers.d/borgbackup
+        content: "borgbackup ALL=(ALL) NOPASSWD: ALL"
+        validate: 'visudo -cf %s'
+      become: true
+
+    - name: Ensure .ssh directory exists for borgbackup user
+      ansible.builtin.file:
+        path: "/home/borgbackup/.ssh"
+        state: directory
+        owner: borgbackup
+        group: borgbackup
+        mode: '0700'
+      delegate_to: localhost
+      run_once: true
+      become: true
+
+    - name: Ensure targets directory exists for borgbackup user
+      ansible.builtin.file:
+        path: "/home/borgbackup/targets"
+        state: directory
+        owner: borgbackup
+        group: borgbackup
+        mode: '0700'
+      delegate_to: localhost
+      run_once: true
+      become: true
+
+    - name: Prompt for the Borg passphrase
+      pause:
+        prompt: "Enter the Borg passphrase"
+      register: passphrase_prompt
+      no_log: true  # Prevents logging of sensitive information
+
+
+    - name: Set the Borg passphrase from prompt
+      set_fact:
+        borg_passphrase: "{{ passphrase_prompt.user_input }}"
+      when: passphrase_prompt is defined and passphrase_prompt.user_input is defined
+
+    - name: Print hostname
+      debug:
+        msg: "The hostname is {{ ansible_hostname }}, will create folders based on this"
+
+    - name: Create directories for the new backup device
+      ansible.builtin.command:
+        cmd: ssh -p {{ hetzner_storage_box_port }} {{ hetzner_storage_box_user }}@{{ hetzner_storage_box_user }}{{ hetzner_storage_box_host }} 'mkdir -p backups/{{ ansible_hostname }}/repo'
+
+
+    - name: Generate the ssh key to be used for backups
+      ansible.builtin.command:
+        cmd: ssh-keygen -t ed25519 -f "{{ tmp_ssh_key_path }}" -N '' -C "{{ ansible_hostname }}"
+      args:
+        creates: "/tmp/storagebox-backup"
+
+    - name: Add the generated SSH key to authorized_keys file on backup device
+      ansible.builtin.lineinfile:
+        path: authorized_keys
+        line: "{{ authorized_keys_content }}"
+        create: yes
+        mode: "666"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Create .ssh directory for new repo
+      ansible.builtin.command:
+        cmd: ssh -p {{ hetzner_storage_box_port }} {{ hetzner_storage_box_user }}@{{ hetzner_storage_box_user }}{{ hetzner_storage_box_host }} 'mkdir -p /home/backups/{{ ansible_hostname }}/.ssh'
+
+    - name: Upload authorized_keys to correct file
+      ansible.builtin.command:
+        cmd: scp authorized_keys {{ hetzner_storage_box_user }}@{{ hetzner_storage_box_user }}{{ hetzner_storage_box_host }}:backups/{{ ansible_hostname }}/.ssh/authorized_keys
+
+
+    - name: Remove authorized_keys
+      file:
+        path: ./authorized_keys
+        state: absent
+
+    - name: Move the SSH private key to borgbackup's .ssh directory
+      ansible.builtin.copy:
+        src: "{{ tmp_ssh_key_path }}"
+        dest: "{{ ssh_key_path }}"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0600'
+      become: true
+      become_user: root
+
+    - name: Move the SSH public key to borgbackup's .ssh directory
+      ansible.builtin.copy:
+        src: "{{ tmp_ssh_key_path }}.pub"
+        dest: "{{ ssh_key_path }}.pub"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0644'
+      become: true
+      become_user: root
+
+    - name: Ensure the targets directory exists
+      ansible.builtin.file:
+        path: "/home/borgbackup/targets"
+        state: directory
+        owner: borgbackup
+        group: borgbackup
+        mode: '0750'
+      become: true
+      become_user: borgbackup
+
+    - name: Manual step on Hetzner
+      pause:
+        prompt: "Please go to Hetzner robot and enable a new subaccount, with base directory {{ ansible_hostname }}, enable external and ssh. Enter the subaccount number."
+      register: manual_step_confirmation
+
+    - name: Set the connection number
+      set_fact:
+        connection_number: "{{ manual_step_confirmation.user_input }}"
+
+    - name: Check if Borg repository exists
+      ansible.builtin.command:
+        cmd: "borg info {{ repo_url }}"
+      environment:
+        BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup"
+        BORG_PASSPHRASE: "{{ borg_passphrase }}"
+      register: repo_check
+      ignore_errors: true
+      become: true
+      become_user: borgbackup
+
+    - name: Initialize Borg repository with repokey-blake2 encryption, if not exists
+      ansible.builtin.command:
+        cmd: "borg init --encryption=repokey-blake2 {{ repo_url }}"
+      environment:
+        BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup"
+        BORG_PASSPHRASE: "{{ borg_passphrase }}"
+      when: repo_check.failed
+      become: true
+      become_user: borgbackup
+
+    - name: Borg repo is set up!
+      ansible.builtin.debug:
+        msg: "Borg repo is set up! You can now connect to it with {{ repo_url }}"
+
+    - name: Add configuration to storagebox file
+      ansible.builtin.copy:
+        dest: "/home/borgbackup/targets/storagebox"
+        content: |
+          export BORG_RSH="ssh -i /home/borgbackup/.ssh/storagebox-backup"
+          export BORG_PASSPHRASE="{{ borg_passphrase }}"
+          export BORG_REPO="ssh://{{ hetzner_storage_box_user }}-sub{{ connection_number }}@{{ hetzner_storage_box_user }}-sub{{ connection_number }}{{ hetzner_storage_box_host }}:23/./repo"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0640'
+      become: true
+      become_user: borgbackup
+
+    - name: Check if the file exists
+      ansible.builtin.stat:
+        path: /home/borgbackup/backup_storagebox.sh
+      register: backup_script_stat
+
+    - name: Add script for backups storagebox file
+      ansible.builtin.copy:
+        dest: "/home/borgbackup/backup_storagebox.sh"
+        content: |
+          #!/bin/sh
+          . /home/borgbackup/targets/storagebox
+
+          # some helpers and error handling:
+          info() { printf "\n%s %s\n\n" "$( date )" "$*" >&2; }
+          trap 'echo $( date ) Backup interrupted >&2; exit 2' INT TERM
+
+          info "Starting backup"
+
+          # Backup the most important directories into an archive named after
+          # the machine this script is currently running on:
+
+          borg create                         \
+              --verbose                       \
+              --filter AME                    \
+              --list                          \
+              --stats                         \
+              --show-rc                       \
+              --compression lz4               \
+              --exclude-caches                \
+              --exclude 'home/*/.cache/*'     \
+              --exclude 'var/tmp/*'           \
+              --exclude '*/site-packages/**/*'\
+              --exclude '*/node_modules/**/*'\
+                                              \
+              ::'{hostname}-{now}'            \
+              # Add you directories here!
+              /home                           \
+
+          backup_exit=$?
+
+          info "Pruning repository"
+
+          # Use the `prune` subcommand to maintain 7 daily, 4 weekly and 6 monthly
+          # archives of THIS machine. The '{hostname}-*' matching is very important to
+          # limit prune's operation to this machine's archives and not apply to
+          # other machines' archives also:
+
+          borg prune                          \
+              --list                          \
+              --glob-archives '{hostname}-*'  \
+              --show-rc                       \
+              --keep-daily    7               \
+              --keep-weekly   4               \
+              --keep-monthly  6
+
+          prune_exit=$?
+
+          # actually free repo disk space by compacting segments
+
+          info "Compacting repository"
+
+          borg compact
+
+          compact_exit=$?
+
+          # use highest exit code as global exit code
+          global_exit=$(( backup_exit > prune_exit ? backup_exit : prune_exit ))
+          global_exit=$(( compact_exit > global_exit ? compact_exit : global_exit ))
+
+          if [ ${global_exit} -eq 0 ]; then
+              info "Backup, Prune, and Compact finished successfully"
+          elif [ ${global_exit} -eq 1 ]; then
+              info "Backup, Prune, and/or Compact finished with warnings"
+          else
+              info "Backup, Prune, and/or Compact finished with errors"
+          fi
+
+          exit ${global_exit}
+
+        owner: borgbackup
+        group: borgbackup
+        mode: '0755'
+      become: true
+      become_user: borgbackup
+      when: not backup_script_stat.stat.exists
