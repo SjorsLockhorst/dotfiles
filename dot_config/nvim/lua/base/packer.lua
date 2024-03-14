@@ -3,6 +3,8 @@
 -- Only required if you have packer configured as `opt`
 vim.cmd [[packadd packer.nvim]]
 
+vim.g.tabby_keybinding_accept = '<Tab>'
+
 return require('packer').startup(function(use)
 	-- Packer can manage itself
 	use('wbthomason/packer.nvim')
@@ -150,3 +152,5 @@ return require('packer').startup(function(use)
 	use("nvim-tree/nvim-web-devicons")
 	use("mechatroner/rainbow_csv")
 end)
+
+--- Add config here. Example config:
