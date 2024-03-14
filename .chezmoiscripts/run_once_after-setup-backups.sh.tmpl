@@ -1,0 +1,6 @@
+{{ if (and (.backup) (eq .chezmoi.os "linux")) -}}
+#!/bin/bash
+
+setup_borg
+
+{{ end -}}

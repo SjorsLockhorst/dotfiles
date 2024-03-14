@@ -10,3 +10,7 @@ key.txt.age
 ./applications/obsidian.desktop
 ./applications/mimeapps.list
 {{ end -}}
+
+{{ if (not .backup) -}}
+./dot_playbooks/
+{{ end -}}

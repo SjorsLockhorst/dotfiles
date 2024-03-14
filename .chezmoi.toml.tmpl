@@ -8,6 +8,7 @@
 {{- $memo2 := promptBool "memo2" -}}
 {{- $obsidian := promptBool "obsidian" -}}
 
+{{- $backup := promptBool "backup" -}}
 
 [data]
     email = {{ $email | quote }}
@@ -19,6 +20,7 @@
     memo2 = {{ $memo2 }}
     latex = {{ $latex }}
     obsidian = {{ $obsidian }}
+    backup = {{ $backup }}
 
     # Constants
     conda_dir = "~/miniconda3"

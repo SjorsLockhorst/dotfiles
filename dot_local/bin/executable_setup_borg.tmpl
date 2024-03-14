@@ -1,3 +1,4 @@
+{{ if (and (.backup) (eq .chezmoi.os "linux")) -}}
 #!/bin/bash
 
 # The path to the file we want to check
@@ -39,3 +40,4 @@ else
 fi
 
 ansible-playbook ~/.playbooks/setup_borg.yml
+{{ end }}

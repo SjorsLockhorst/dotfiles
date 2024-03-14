@@ -219,9 +219,11 @@
               --exclude 'var/tmp/*'           \
               --exclude '*/site-packages/**/*'\
               --exclude '*/node_modules/**/*' \
+              --exclude '*/miniconda3/**/*'   \
                                               \
               ::'{hostname}-{now}'            \
               /home                           \
+              /timeshift                      \
 
           backup_exit=$?
 
