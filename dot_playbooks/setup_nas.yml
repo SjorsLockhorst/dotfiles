@@ -1,0 +1,270 @@
+---
+- name: Prepare and check NAS availability
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    home_dir: "/srv/dev-disk-by-uuid-f83ca732-0851-46ea-98b0-06dae6f5680f/homes/{{ ansible_hostname }}"
+    authorized_keys_content: "command=\"borg serve --restrict-to-repository {{ home_dir }}/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
+    tmp_ssh_key_path: "/tmp/nas-backup"
+  tasks:
+    - name: Ping NAS to check if it's up
+      wait_for:
+        host: "nas.home.lan"
+        port: 22
+        state: started
+        timeout: 30 # Adjust the timeout as necessary
+      delegate_to: localhost
+
+    - name: Add NAS to dynamic inventory
+      add_host:
+        name: "nas.home.lan"
+        groups: "nas_group"
+        ansible_user: "sjors"
+        ansible_ssh_private_key_file: "~/.ssh/id_rsa"
+        user_name: "{{ ansible_hostname }}"
+        home_directory: "{{ home_dir }}"
+
+    - name: Generate the ssh key to be used for backups
+      ansible.builtin.command:
+        cmd: ssh-keygen -t ed25519 -f "{{ tmp_ssh_key_path }}" -N '' -C "{{ ansible_hostname }}"
+      args:
+        creates: "{{ tmp_ssh_key_path }}"
+
+    - name: Add the generated SSH key to authorized_keys file on backup device
+      ansible.builtin.lineinfile:
+        path: authorized_keys
+        line: "{{ authorized_keys_content }}"
+        create: yes
+        mode: "666"
+      delegate_to: localhost
+      run_once: true
+
+- name: Setup user on NAS
+  hosts: nas_group
+  gather_facts: no
+  become: true
+  vars:
+    tmp_ssh_key_path: "/tmp/nas-backup"
+  pre_tasks:
+    - name: Set local variables for easy reference
+      set_fact:
+        user_name: "{{ hostvars['nas.home.lan']['user_name'] }}"
+        home_directory: "{{ hostvars['nas.home.lan']['home_directory'] }}"
+  tasks:
+    - name: Create a new user with the name of the Ansible control node's hostname
+      user:
+        name: "{{ user_name }}"
+        group: sudo
+        create_home: yes
+        home: "{{ home_directory }}"
+        groups: ssh,backup,users
+
+    - name: Add user to sudoers with no password
+      lineinfile:
+        dest: /etc/sudoers
+        line: "{{ user_name }} ALL=(ALL) NOPASSWD: ALL"
+        validate: 'visudo -cf %s'
+
+    - name: Create a repo directory in the user's home directory
+      file:
+        path: "{{ home_directory }}/repo"
+        state: directory
+        owner: "{{ user_name }}"
+        group: "root"
+        mode: '0755'
+
+    - name: Create .ssh directory in the user's home directory
+      file:
+        path: "{{ home_directory }}/.ssh"
+        state: directory
+        owner: "{{ user_name }}"
+        group: "root"
+        mode: '0700'
+
+    - name: Copy the authorized_keys to the user's .ssh directory on NAS
+      ansible.builtin.copy:
+        src: "authorized_keys"
+        dest: "{{ home_directory }}/.ssh/authorized_keys"
+        owner: "{{ user_name }}"
+        group: "root"
+        mode: '0600'
+
+- name: Local moving of keys
+  hosts: localhost
+  gather_facts: no
+  become: true
+  vars:
+    tmp_ssh_key_path: "/tmp/nas-backup"
+    ssh_key_path: "/home/borgbackup/.ssh/nas-backup"
+  tasks:
+    - name: Move the SSH private key to borgbackup's .ssh directory
+      ansible.builtin.copy:
+        src: "{{ tmp_ssh_key_path }}"
+        dest: "{{ ssh_key_path }}"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0600'
+      become: true
+      become_user: root
+
+    - name: Move the SSH public key to borgbackup's .ssh directory
+      ansible.builtin.copy:
+        src: "{{ tmp_ssh_key_path }}.pub"
+        dest: "{{ ssh_key_path }}.pub"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0644'
+      become: true
+      become_user: root
+
+    - name: Remove the temporary authorized_keys file locally
+      ansible.builtin.file:
+        path: "authorized_keys"
+        state: absent
+      run_once: true
+
+
+- name: Init borg
+  hosts: localhost
+  gather_facts: yes
+  become: true
+  become_user: borgbackup
+  vars:
+    repo_url: "ssh://{{ ansible_hostname }}@nas.home.lan/./repo"
+    ssh_key_path: "/home/borgbackup/.ssh/nas-backup"
+    backup_script_path: "/home/borgbackup/backup_nas.sh"
+    env_file_path: "/home/borgbackup/targets/nas"
+  environment:
+      BORG_RSH: "ssh -i {{ ssh_key_path }}"
+      BORG_REPO: "{{ repo_url }}"
+  tasks:
+    - name: Prompt for the Borg passphrase
+      pause:
+        prompt: "Enter the Borg passphrase"
+      register: passphrase_prompt
+      no_log: true  # Prevents logging of sensitive information
+
+    - name: Set the Borg passphrase from prompt
+      set_fact:
+        borg_passphrase: "{{ passphrase_prompt.user_input }}"
+      when: passphrase_prompt is defined and passphrase_prompt.user_input is defined
+
+    - name: Check if Borg repository exists
+      ansible.builtin.command:
+        cmd: "borg info"
+      environment:
+        BORG_PASSPHRASE: "{{ borg_passphrase }}"
+      register: repo_check
+      ignore_errors: true
+
+    - name: Initialize Borg repository with repokey-blake2 encryption, if not exists
+      ansible.builtin.command:
+        cmd: "borg init --encryption=repokey-blake2"
+      environment:
+        BORG_PASSPHRASE: "{{ borg_passphrase }}"
+      when: repo_check.failed
+
+    - name: Add configuration to storagebox file
+      ansible.builtin.copy:
+        dest: "{{ env_file_path }}"
+        content: |
+          export BORG_RSH="ssh -i {{ ssh_key_path }}"
+          export BORG_PASSPHRASE="{{ borg_passphrase }}"
+          export BORG_REPO="{{ repo_url }}"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0640'
+      become: true
+      become_user: borgbackup
+
+    - name: Check if the file exists
+      ansible.builtin.stat:
+        path: "{{ backup_script_path }}"
+      register: backup_script_stat
+
+    - name: Add script for backups storagebox file
+      ansible.builtin.copy:
+        dest: "{{ backup_script_path }}"
+        content: |
+          #!/bin/sh
+          . "{{ env_file_path }}"
+
+          # some helpers and error handling:
+          info() { printf "\n%s %s\n\n" "$( date )" "$*" >&2; }
+          trap 'echo $( date ) Backup interrupted >&2; exit 2' INT TERM
+
+          info "Starting backup"
+
+          # Backup the most important directories into an archive named after
+          # the machine this script is currently running on:
+
+          borg create                         \
+              --verbose                       \
+              --filter AME                    \
+              --list                          \
+              --stats                         \
+              --progress                      \
+              --show-rc                       \
+              --compression lz4               \
+              --exclude-caches                \
+              --exclude 'home/*/.cache/*'     \
+              --exclude 'var/tmp/*'           \
+              --exclude '*/site-packages/**/*'\
+              --exclude '*/node_modules/**/*' \
+              --exclude '*/miniconda3/**/*'   \
+                                              \
+              ::'{hostname}-{now}'            \
+              /home                           \
+              /timeshift                      \
+
+          backup_exit=$?
+
+          info "Pruning repository"
+
+          # Use the `prune` subcommand to maintain 7 daily, 4 weekly and 6 monthly
+          # archives of THIS machine. The '{hostname}-*' matching is very important to
+          # limit prune's operation to this machine's archives and not apply to
+          # other machines' archives also:
+
+          borg prune                          \
+              --list                          \
+              --glob-archives '{hostname}-*'  \
+              --show-rc                       \
+              --keep-daily    7               \
+              --keep-weekly   4               \
+              --keep-monthly  6
+
+          prune_exit=$?
+
+          # actually free repo disk space by compacting segments
+
+          info "Compacting repository"
+
+          borg compact
+
+          compact_exit=$?
+
+          # use highest exit code as global exit code
+          global_exit=$(( backup_exit > prune_exit ? backup_exit : prune_exit ))
+          global_exit=$(( compact_exit > global_exit ? compact_exit : global_exit ))
+
+          if [ ${global_exit} -eq 0 ]; then
+              info "Backup, Prune, and Compact finished successfully"
+          elif [ ${global_exit} -eq 1 ]; then
+              info "Backup, Prune, and/or Compact finished with warnings"
+          else
+              info "Backup, Prune, and/or Compact finished with errors"
+          fi
+
+          exit ${global_exit}
+
+        owner: borgbackup
+        group: borgbackup
+        mode: '0755'
+      become: true
+      become_user: borgbackup
+      when: not backup_script_stat.stat.exists
+
+    - name: Borg repo is set up!
+      ansible.builtin.debug:
+        msg: "Borg repo is set up! "

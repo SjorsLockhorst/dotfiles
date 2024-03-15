@@ -1,6 +1,6 @@
 {{ if (and (.backup) (eq .chezmoi.os "linux")) -}}
 #!/bin/bash
+# setup_borg_locally.yml hash: {{ include "dot_playbooks/setup_borg_locally.yml" | sha256sum }}
 
-setup_borg
-
+ansible-playbook ~/.playbooks/setup_borg_locally.yml
 {{ end -}}

@@ -47,6 +47,10 @@
 	"latexmk"
 	"zotero"
 -}}
+{{ $backup := list
+	"ansible"
+	"borgbackup"
+-}}
 
 #!/bin/sh
 # Add brave browser gpg
@@ -75,4 +79,9 @@ wget -qO- https://raw.githubusercontent.com/retorquere/zotero-deb/master/install
 sudo apt update
 sudo apt-get install -y {{ $latex | join " " }}
 {{ end -}}
+
+{{ if .latex -}}
+sudo apt-get install -y {{ $backup | join " " }}
+{{ end -}}
+
 {{ end -}}

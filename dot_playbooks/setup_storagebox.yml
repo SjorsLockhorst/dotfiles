@@ -13,51 +13,6 @@
     repo_url: "ssh://{{ hetzner_storage_box_user }}-sub{{ connection_number }}@{{ hetzner_storage_box_user }}-sub{{ connection_number }}{{ hetzner_storage_box_host }}:23/./repo"
 
   tasks:
-    - name: Install BorgBackup package
-      apt:
-        name: borgbackup
-        state: present
-        update_cache: yes
-      become: true
-
-    - name: Add borgbackup user
-      user:
-        name: borgbackup
-        createhome: yes
-        groups: sudo
-        append: yes
-        state: present
-      become: true
-
-    - name: Add sudoers file for borgbackup user
-      copy:
-        dest: /etc/sudoers.d/borgbackup
-        content: "borgbackup ALL=(ALL) NOPASSWD: ALL"
-        validate: 'visudo -cf %s'
-      become: true
-
-    - name: Ensure .ssh directory exists for borgbackup user
-      ansible.builtin.file:
-        path: "/home/borgbackup/.ssh"
-        state: directory
-        owner: borgbackup
-        group: borgbackup
-        mode: '0700'
-      delegate_to: localhost
-      run_once: true
-      become: true
-
-    - name: Ensure targets directory exists for borgbackup user
-      ansible.builtin.file:
-        path: "/home/borgbackup/targets"
-        state: directory
-        owner: borgbackup
-        group: borgbackup
-        mode: '0700'
-      delegate_to: localhost
-      run_once: true
-      become: true
-
     - name: Prompt for the Borg passphrase
       pause:
         prompt: "Enter the Borg passphrase"
