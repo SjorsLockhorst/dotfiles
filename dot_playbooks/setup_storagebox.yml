@@ -2,23 +2,28 @@
 - name: Create a new backup device on Hetzner Storage Box
   hosts: localhost
   gather_facts: true
-
   vars:
-    hetzner_storage_box_port: 23
-    hetzner_storage_box_user: "{{ lookup('env', 'HETZNER_ACCOUNT_NUMBER') }}"
-    hetzner_storage_box_host: ".your-storagebox.de"
+    storagebox_port: 23
+    storagebox_user: "{{ lookup('env', 'STORAGEBOX_USER') }}"
+    storagebox_sub_account_number: "{{ lookup('env', 'STORAGEBOX_SUB_USER') }}"
+    storagebox_domain: ".your-storagebox.de"
+
     tmp_ssh_key_path: "/tmp/storagebox-backup"
     ssh_key_path: "/home/borgbackup/.ssh/storagebox-backup"
     authorized_keys_content: "command=\"borg serve --restrict-to-repository /home/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
-    repo_url: "ssh://{{ hetzner_storage_box_user }}-sub{{ connection_number }}@{{ hetzner_storage_box_user }}-sub{{ connection_number }}{{ hetzner_storage_box_host }}:23/./repo"
 
   tasks:
+
+    - name: Check STORAGEBOX_USER environment variable
+      fail:
+        msg: "The STORAGEBOX_USER environment variable is not set. Please set it before running this playbook (usually done in ~/.bashrc, ~/.zshrc, or similar)."
+      when: storagebox_user is undefined or storagebox_user | trim == ""
+
     - name: Prompt for the Borg passphrase
       pause:
         prompt: "Enter the Borg passphrase"
       register: passphrase_prompt
       no_log: true  # Prevents logging of sensitive information
-
 
     - name: Set the Borg passphrase from prompt
       set_fact:
@@ -31,7 +36,7 @@
 
     - name: Create directories for the new backup device
       ansible.builtin.command:
-        cmd: ssh -p {{ hetzner_storage_box_port }} {{ hetzner_storage_box_user }}@{{ hetzner_storage_box_user }}{{ hetzner_storage_box_host }} 'mkdir -p backups/{{ ansible_hostname }}/repo'
+        cmd: ssh -p {{ storagebox_port }} {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }} 'mkdir -p backups/{{ ansible_hostname }}/repo'
 
 
     - name: Generate the ssh key to be used for backups
@@ -51,11 +56,11 @@
 
     - name: Create .ssh directory for new repo
       ansible.builtin.command:
-        cmd: ssh -p {{ hetzner_storage_box_port }} {{ hetzner_storage_box_user }}@{{ hetzner_storage_box_user }}{{ hetzner_storage_box_host }} 'mkdir -p /home/backups/{{ ansible_hostname }}/.ssh'
+        cmd: ssh -p {{ storagebox_port }} {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }} 'mkdir -p /home/backups/{{ ansible_hostname }}/.ssh'
 
     - name: Upload authorized_keys to correct file
       ansible.builtin.command:
-        cmd: scp authorized_keys {{ hetzner_storage_box_user }}@{{ hetzner_storage_box_user }}{{ hetzner_storage_box_host }}:backups/{{ ansible_hostname }}/.ssh/authorized_keys
+        cmd: scp authorized_keys {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }}:backups/{{ ansible_hostname }}/.ssh/authorized_keys
 
 
     - name: Remove authorized_keys
@@ -93,21 +98,43 @@
       become: true
       become_user: borgbackup
 
-    - name: Manual step on Hetzner
-      pause:
-        prompt: "Please go to Hetzner robot and enable a new subaccount, with base directory {{ ansible_hostname }}, enable external and ssh. Enter the subaccount number."
-      register: manual_step_confirmation
-
-    - name: Set the connection number
+    - name: Check if STORAGEBOX_SUB_USER is set
       set_fact:
-        connection_number: "{{ manual_step_confirmation.user_input }}"
+        storagebox_sub_account_number_provided: "{{ storagebox_sub_account_number }}"
+      when: storagebox_sub_account_number is defined and storagebox_sub_account_number | trim != ""
+
+    - name: Query for STORAGEBOX_SUB_USER if not set
+      pause:
+        prompt: >
+          Please go to Hetzner robot and enable a new subaccount, with base directory {{ ansible_hostname }},
+          enable external and ssh. Enter the subaccount number. You can prevent this by setting STORAGEBOX_SUB_USER=x in the .storageboxenv.
+      register: manual_step_confirmation
+      when: storagebox_sub_account_number is undefined or storagebox_sub_account_number | trim == ""
+
+    - name: Set the storagebox_sub_account_number from user input
+      set_fact:
+        storagebox_sub_account_number: "{{ manual_step_confirmation.user_input }}"
+      when: storagebox_sub_account_number is undefined or storagebox_sub_account_number | trim == "" and manual_step_confirmation is defined
+
+    - name: Set storagebox_sub_user with or without user input
+      set_fact:
+        storagebox_sub_user: "{{ storagebox_user }}-sub{{ storagebox_sub_account_number }}"
+
+    - name: Set repo url
+      set_fact:
+        repo_url: "ssh://{{ storagebox_sub_user }}@{{ storagebox_sub_user }}{{ storagebox_domain }}:{{ storagebox_port }}/./repo"
+
+    - name: Display the value of a variable
+      debug:
+        msg: "Repo url is {{ repo_url }}"
 
     - name: Check if Borg repository exists
       ansible.builtin.command:
-        cmd: "borg info {{ repo_url }}"
+        cmd: "borg info"
       environment:
         BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup"
         BORG_PASSPHRASE: "{{ borg_passphrase }}"
+        BORG_REPO: "{{ repo_url }}"
       register: repo_check
       ignore_errors: true
       become: true
@@ -115,10 +142,11 @@
 
     - name: Initialize Borg repository with repokey-blake2 encryption, if not exists
       ansible.builtin.command:
-        cmd: "borg init --encryption=repokey-blake2 {{ repo_url }}"
+        cmd: "borg init --encryption=repokey-blake2"
       environment:
         BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup"
         BORG_PASSPHRASE: "{{ borg_passphrase }}"
+        BORG_REPO: "{{ repo_url }}"
       when: repo_check.failed
       become: true
       become_user: borgbackup
@@ -133,7 +161,7 @@
         content: |
           export BORG_RSH="ssh -i /home/borgbackup/.ssh/storagebox-backup"
           export BORG_PASSPHRASE="{{ borg_passphrase }}"
-          export BORG_REPO="ssh://{{ hetzner_storage_box_user }}-sub{{ connection_number }}@{{ hetzner_storage_box_user }}-sub{{ connection_number }}{{ hetzner_storage_box_host }}:23/./repo"
+          export BORG_REPO="{{ repo_url }}"
         owner: borgbackup
         group: borgbackup
         mode: '0640'
