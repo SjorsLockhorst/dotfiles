@@ -48,6 +48,7 @@
 	"zotero"
 -}}
 {{ $backup := list
+	"acl"
 	"ansible"
 	"borgbackup"
 -}}
@@ -80,7 +81,7 @@ sudo apt update
 sudo apt-get install -y {{ $latex | join " " }}
 {{ end -}}
 
-{{ if .latex -}}
+{{ if .backup -}}
 sudo apt-get install -y {{ $backup | join " " }}
 {{ end -}}
 
