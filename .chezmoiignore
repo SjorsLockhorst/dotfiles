@@ -11,6 +11,6 @@ key.txt.age
 ./applications/mimeapps.list
 {{ end -}}
 
-{{ if (not .backup) -}}
+{{ if (not .obsidian) -}}
 ./dot_playbooks/
 {{ end -}}

@@ -25,7 +25,8 @@ lsp.configure("pylsp", {
         },
         pyflakes = {
           enabled = false
-        }
+        },
+        pylsp_mypy = { enabled = true },
       }
     }
   }
