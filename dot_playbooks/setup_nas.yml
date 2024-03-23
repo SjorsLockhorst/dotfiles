@@ -3,8 +3,7 @@
   hosts: localhost
   gather_facts: yes
   vars:
-    home_dir: "/srv/dev-disk-by-uuid-f83ca732-0851-46ea-98b0-06dae6f5680f/homes/{{ ansible_hostname }}"
-    authorized_keys_content: "command=\"borg serve --restrict-to-repository {{ home_dir }}/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
+    authorized_keys_content: "command=\"borg serve --restrict-to-repository ~/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
     tmp_ssh_key_path: "/tmp/nas-backup"
   tasks:
     - name: Ping NAS to check if it's up

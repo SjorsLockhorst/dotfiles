@@ -12,5 +12,5 @@ key.txt.age
 {{ end -}}
 
 {{ if (not .backup) -}}
-./dot_playbooks/
+./dot_playbooks
 {{ end -}}
