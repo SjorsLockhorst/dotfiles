@@ -1,4 +1,4 @@
-{{ if eq .chezmoi.osRelease.id "debian" -}}
+{{ if eq .chezmoi.osRelease.idLike "debian" -}}
 
 
 {{ $packages := list
@@ -25,6 +25,7 @@
 	"desktop-file-utils"
 	"libbz2-dev"
 	"tk-dev"
+	"fontconfig"
 -}}
 
 {{ $gui_packages := list
