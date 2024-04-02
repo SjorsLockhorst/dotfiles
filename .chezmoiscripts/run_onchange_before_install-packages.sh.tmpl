@@ -1,4 +1,5 @@
-{{ if eq .chezmoi.osRelease.idLike "debian" -}}
+{{ if (or (eq (get .chezmoi.osRelease "idLike") "debian") (eq .chezmoi.osRelease.id "debian")) -}}
+
 
 
 {{ $packages := list
@@ -24,6 +25,7 @@
 	"age"
 	"desktop-file-utils"
 	"libbz2-dev"
+	"liblzma-dev"
 	"tk-dev"
 	"fontconfig"
 -}}
