@@ -34,7 +34,7 @@
     url = "https://github.com/obsidianmd/obsidian-releases/releases/download/v{{ $obsidianVersion }}/Obsidian-{{ $obsidianVersion }}.AppImage"
     exact = true
 
-["vaults/lifeOS"]
+["Nextcloud/vaults/lifeOS"]
     type = "git-repo"
     url = "git@github.com:SjorsLockhorst/lifeOS.git"
 
