@@ -5,6 +5,8 @@ require('neodev').setup({
   library = { plugins = { "nvim-dap-ui" }, type = true }
 })
 require("fidget").setup()
+require("mason").setup()
+
 local lsp = require('lsp-zero')
 local luasnip = require("luasnip")
 
@@ -31,11 +33,13 @@ lsp.configure("pylsp", {
     }
   }
 })
+
 lsp.configure("vetur", {
   format = {
     enable = false
   }
 })
+
 lsp.configure("eslint", {
   filetypes = { "vue" },
   on_attach = function(_, bufnr)
@@ -46,6 +50,7 @@ lsp.configure("eslint", {
   end,
 })
 
+
 local function FixAll()
   vim.lsp.buf.code_action({ context = { only = { "source.fixAll" } }, apply = true })
   vim.lsp.buf.format()
@@ -54,6 +59,24 @@ end
 lsp.configure("ruff_lsp", {
   on_attach = function() vim.keymap.set("n", "<leader>fa", FixAll) end
 })
+
+-- Put this here due to mason otherwise not having loaded before
+local mason_registry = require('mason-registry')
+local vue_language_server_path = mason_registry.get_package('vue-language-server'):get_install_path() .. '/node_modules/@vue/language-server'
+
+lsp.configure("tsserver", {
+  init_options = {
+    plugins = {
+      {
+        name = '@vue/typescript-plugin',
+        location = vue_language_server_path,
+        languages = { 'vue' },
+      },
+    },
+  },
+  filetypes = { 'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'vue' },
+}
+)
 
 
 -- Change default lsp mappings
@@ -134,6 +157,7 @@ end)
 
 lsp.nvim_workspace()
 lsp.setup()
+
 
 vim.diagnostic.config({
   virtual_text = true,
