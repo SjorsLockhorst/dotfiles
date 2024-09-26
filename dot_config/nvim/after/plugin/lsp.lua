@@ -40,15 +40,15 @@ lsp.configure("vetur", {
   }
 })
 
-lsp.configure("eslint", {
-  filetypes = { "vue" },
-  on_attach = function(_, bufnr)
-    vim.api.nvim_create_autocmd("BufWritePre", {
-      buffer = bufnr,
-      command = "EslintFixAll",
-    })
-  end,
-})
+-- lsp.configure("eslint", {
+--   filetypes = { "vue" },
+--   on_attach = function(_, bufnr)
+--     vim.api.nvim_create_autocmd("BufWritePre", {
+--       buffer = bufnr,
+--       command = "EslintFixAll",
+--     })
+--   end,
+-- })
 
 
 local function FixAll()
@@ -64,13 +64,13 @@ lsp.configure("ruff_lsp", {
 local mason_registry = require('mason-registry')
 local vue_language_server_path = mason_registry.get_package('vue-language-server'):get_install_path() .. '/node_modules/@vue/language-server'
 
-lsp.configure("tsserver", {
+lsp.configure("ts_ls", {
   init_options = {
     plugins = {
       {
         name = '@vue/typescript-plugin',
         location = vue_language_server_path,
-        languages = { 'vue' },
+        languages = { 'vue', 'typescript', 'javascript' },
       },
     },
   },
