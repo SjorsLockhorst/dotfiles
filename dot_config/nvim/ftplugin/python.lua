@@ -38,6 +38,22 @@ local function runAndNext()
     )
 end
 
+local function runTest()
+    -- Get the absolute path of the current buffer
+    local file_path = vim.fn.expand('%:p')  -- This gives the absolute path of the current buffer
+
+    -- Construct the Python unittest command
+    local test_command = "python -m unittest " .. file_path
+
+    -- Use 'SlimeSend1' plug mapping to send the command to the REPL/terminal
+    local send_command = "SlimeSend1 " .. test_command .. "\n"
+
+    -- Feed the keys into Slime (native Lua function to send keys)
+    vim.cmd(send_command)
+end
+
+
+
 vim.keymap.set('n', '<leader>aa', insertCellAbove)
 vim.keymap.set('n', '<leader>bb', insertCellBelow)
 vim.keymap.set('n', '<leader>cm', ':IPythonCellToMarkdown<CR>')
@@ -55,6 +71,7 @@ vim.keymap.set("n", "<leader>jnq", function()
     vim.cmd("SlimeSend1 exit")
 end)
 vim.keymap.set('n', '<leader>S', runAndNext)
+vim.keymap.set('n', '<leader>t', runTest)
 
 vim.keymap.set("n", "<leader>x", "<Plug>JupyterExecute")
 vim.keymap.set("n", "<leader>X", "<Plug>JupyterExecuteAll")
