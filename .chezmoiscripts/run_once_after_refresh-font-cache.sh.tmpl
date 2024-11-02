@@ -1,4 +1,5 @@
+{{ if (eq (get .chezmoi.osRelease "idLike") "debian") -}}
 #!/bin/bash
 
 fc-cache -fv
-
+{{- end }}

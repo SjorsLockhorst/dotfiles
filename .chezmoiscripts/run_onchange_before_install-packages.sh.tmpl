@@ -1,4 +1,4 @@
-{{ if (or (eq (get .chezmoi.osRelease "idLike") "debian") (eq .chezmoi.osRelease.id "debian")) -}}
+{{ if (eq (get .chezmoi.osRelease "idLike") "debian") -}}
 
 
 
@@ -89,4 +89,10 @@ sudo apt-get install -y {{ $latex | join " " }}
 sudo apt-get install -y {{ $backup | join " " }}
 {{ end -}}
 
+{{ end -}}
+
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 {{ end -}}

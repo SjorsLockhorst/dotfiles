@@ -23,8 +23,8 @@
     [".local/bin/pomodoro".filter]
     command = "tar"
     args = ["--extract", "--file", "/dev/stdin", "--gzip", "--to-stdout", "pomodoro"]
-
 {{- end }}
+
 
 {{ if .obsidian -}}
 {{ $obsidianVersion := "1.5.3" -}}
