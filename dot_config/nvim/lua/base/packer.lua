@@ -13,7 +13,7 @@ return require('packer').startup(function(use)
 		requires = { { 'nvim-lua/plenary.nvim' } }
 	}
 	-- Fuzzy Finder Algorithm which requires local dependencies to be built. Only load if `make` is available
-	use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+	use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
 
 	-- Syntax parsing
 	use('nvim-treesitter/nvim-treesitter', { run = ':TSUpdate' })

@@ -2,7 +2,7 @@ require("obsidian").setup({
   workspaces = {
     {
       name = "lifeOS",
-      path = "~/Nextcloud/vaults/lifeOS/",
+      path = "~/vaults/lifeOS/",
     },
   },
   templates = {

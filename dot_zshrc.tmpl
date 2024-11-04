@@ -1,9 +1,10 @@
 # If you come from bash you might have to change your $PATH.
-{{- if eq .chezmoi.os "linux" -}}
+
+{{- if eq .chezmoi.os "linux" }}
 export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:$HOME/local/bin:$HOME/.local/bin:$PATH
 {{- end }}
 
-{{- if eq .chezmoi.os "darwin" -}}
+{{ if eq .chezmoi.os "darwin" }}
 export PATH=$HOME/bin:/opt/homebrew/bin:$PATH
 {{- end }}
 
