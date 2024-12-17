@@ -40,6 +40,16 @@ lsp.configure("vetur", {
   }
 })
 
+lsp.configure("rust_analyzer", {
+  settings = {
+      ['rust-analyzer'] = {
+        diagnostics = {
+          enable = true;
+        }
+      }
+  }
+})
+
 -- lsp.configure("eslint", {
 --   filetypes = { "vue" },
 --   on_attach = function(_, bufnr)
