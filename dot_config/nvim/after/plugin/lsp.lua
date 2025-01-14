@@ -21,15 +21,7 @@ lsp.preset('recommended')
 lsp.configure("pylsp", {
   settings = {
     pylsp = {
-      plugins = {
-        pycodestyle = {
-          enabled = false
-        },
-        pyflakes = {
-          enabled = false
-        },
-        pylsp_mypy = { enabled = true },
-      }
+      plugins = {}
     }
   }
 })
@@ -66,7 +58,7 @@ local function FixAll()
   vim.lsp.buf.format()
 end
 
-lsp.configure("ruff_lsp", {
+lsp.configure("ruff", {
   on_attach = function() vim.keymap.set("n", "<leader>fa", FixAll) end
 })
 

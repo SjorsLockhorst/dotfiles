@@ -39,16 +39,29 @@ local function runAndNext()
 end
 
 local function runTest()
-    -- Get the absolute path of the current buffer
-    local file_path = vim.fn.expand('%:p')  -- This gives the absolute path of the current buffer
+    -- Get the current filename (without the path)
+    local current_filename = vim.fn.expand('%:t:r')  -- Get only the filename without extension
+    local test_pattern = "test_" .. current_filename  -- Construct test pattern: test_{current_filename}
 
-    -- Construct the Python unittest command
-    local test_command = "python -m unittest " .. file_path
+    -- Construct the Python unittest command with the test pattern
+    local test_command = "pytest -k " .. test_pattern
 
-    -- Use 'SlimeSend1' plug mapping to send the command to the REPL/terminal
+    -- Check the number of tmux panes
+    local handle = io.popen("tmux list-panes | wc -l")  -- Run tmux command to count panes
+    local panes_count = tonumber(handle:read("*a"))    -- Read the output and convert to number
+    handle:close()
+
+    -- If there is only one pane, create a new one
+    if panes_count == 1 then
+        os.execute("tmux split-window -h")  -- Split the tmux window horizontally (to the right)
+    end
+
+    -- Use 'SlimeSend1' to send the command to the REPL/terminal
+    local send_venv = "SlimeSend1 venv" .. "\n"
     local send_command = "SlimeSend1 " .. test_command .. "\n"
 
-    -- Feed the keys into Slime (native Lua function to send keys)
+    -- Send the test command
+    vim.cmd(send_venv)
     vim.cmd(send_command)
 end
 
