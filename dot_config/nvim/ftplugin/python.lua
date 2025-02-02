@@ -67,8 +67,8 @@ end
 
 
 
-vim.keymap.set('n', '<leader>aa', insertCellAbove)
-vim.keymap.set('n', '<leader>bb', insertCellBelow)
+vim.keymap.set('n', '<leader>A', insertCellAbove)
+vim.keymap.set('n', '<leader>B', insertCellBelow)
 vim.keymap.set('n', '<leader>cm', ':IPythonCellToMarkdown<CR>')
 
 vim.keymap.set('n', '<leader>re', function() OpenTmuxRepl("ipython3") end)
