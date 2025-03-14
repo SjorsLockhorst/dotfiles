@@ -108,6 +108,7 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 alias cat="batcat"
+alias xclip="xclip -selection clipboard"
 
 # Set vi as editor
 set -o vi
@@ -126,10 +127,12 @@ fi
 function venv () {
     if [ -n "$1" ]; then
 	source $1
-    else
+	    elif [ -d ".venv" ]; then
+	source .venv/bin/activate
+	    else
 	source *-env/bin/activate
-    fi
-    if ! { [ "$TERM" = "screen" ] && [ -n "$TMUX" ]; } then
+	    fi
+	    if ! { [ "$TERM" = "screen" ] && [ -n "$TMUX" ]; } then
 	tmux set-environment VIRTUAL_ENV $VIRTUAL_ENV &&
 	alias deactivate='\deactivate && tmux set-environment -u VIRTUAL_ENV && unalias deactivate'
     fi
