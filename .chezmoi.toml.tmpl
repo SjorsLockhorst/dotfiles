@@ -3,9 +3,7 @@
 {{- $nvim := promptBool "nvim" -}}
 {{- $plasma_i3 := promptBool "plasma_i3" -}}
 {{- $gui_packages := promptBool "gui_packages" -}}
-{{- $data_science := promptBool "data_science" -}}
 {{- $latex := promptBool "latex" -}}
-{{- $memo2 := promptBool "memo2" -}}
 {{- $obsidian := promptBool "obsidian" -}}
 
 {{- $backup := promptBool "backup" -}}
@@ -16,14 +14,10 @@
     nvim = {{ $nvim }}
     plasma_i3 = {{ $plasma_i3 }}
     gui_packages = {{ $gui_packages }}
-    data_science = {{ $data_science }}
-    memo2 = {{ $memo2 }}
     latex = {{ $latex }}
     obsidian = {{ $obsidian }}
     backup = {{ $backup }}
 
-    # Constants
-    conda_dir = "~/miniconda3"
     nerd_font = "FiraCode"
 
 encryption = "age"

@@ -1,7 +1,4 @@
 {{ if (eq (get .chezmoi.osRelease "idLike") "debian") -}}
-
-
-
 {{ $packages := list
 	"curl"
 	"git"
@@ -72,6 +69,7 @@ sudo apt-get install -y {{ $packages | join " " }}
 {{ if .gui_packages -}}
 sudo apt-get install -y {{ $gui_packages | join " " }}
 {{ end -}}
+
 {{ if .zsh -}}
 sudo apt-get install -y {{ $zsh | join " " }}
 {{ end -}}
