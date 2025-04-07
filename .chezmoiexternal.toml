@@ -1,4 +1,4 @@
-{{ if (and (.nvim) (eq (get .chezmoi.osRelease "idLike") "debian")) -}}
+{{ if (and (.nvim) (eq .chezmoi.osRelease.id "debian")) -}}
 [".local/bin/nvim"]
     type = "file"
     executable = true
@@ -21,8 +21,8 @@
     args = ["--extract", "--file", "/dev/stdin", "--gzip", "--to-stdout", "pomodoro"]
 {{- end }}
 
-{{ if (and (.obsidian) (eq (get .chezmoi.osRelease "idLike") "debian")) -}}
-{{ $obsidianVersion := "1.5.3" -}}
+{{ if (and (.obsidian) (eq .chezmoi.osRelease.id  "debian")) -}}
+{{ $obsidianVersion := "1.8.9" -}}
 [".local/bin/obsidian"]
     type = "file"
     executable = true
@@ -47,7 +47,7 @@
     url = "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim"
     refreshPeriod = "168h"
 
-{{ if (and (.plasma_i3) (eq (get .chezmoi.osRelease "idLike") "debian")) -}}
+{{ if (and (.plasma_i3) (eq .chezmoi.osRelease.id "debian")) -}}
 [".themes/layan"]
     type = "archive"
     url = "https://github.com/vinceliuice/Layan-kde/archive/refs/tags/2022-02-13.tar.gz"

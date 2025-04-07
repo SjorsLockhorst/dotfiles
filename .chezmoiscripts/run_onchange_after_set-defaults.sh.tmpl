@@ -1,4 +1,4 @@
-{{ if (and (.gui_packages) (eq (get .chezmoi.osRelease "idLike") "debian")) -}}
+{{ if (and (.gui_packages) (eq .chezmoi.osRelease.id "debian")) -}}
 #!/bin/sh
 
 sudo update-alternatives --set x-terminal-emulator $(which kitty)

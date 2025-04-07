@@ -1,4 +1,4 @@
-{{ if (eq (get .chezmoi.osRelease "idLike") "debian") -}}
+{{ if (eq .chezmoi.osRelease.id  "debian") -}}
 #!/bin/sh
 
 curl https://pyenv.run | bash
