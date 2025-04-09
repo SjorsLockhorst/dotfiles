@@ -17,18 +17,10 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.tabby_keybinding_accept = '<Tab>'
 
 require("lazy").setup({
-    -- Plugin manager
-    { "wbthomason/packer.nvim" },
-
-    -- Telescope (Fuzzy Finder)
     {
         "nvim-telescope/telescope.nvim",
         tag = "0.1.4",
         dependencies = { "nvim-lua/plenary.nvim" }
-    },
-    {
-        "nvim-telescope/telescope-fzf-native.nvim",
-        build = "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release",
     },
 
     -- Syntax Highlighting & Parsing

@@ -82,7 +82,16 @@ plugins=(
 	python
 	zsh-syntax-highlighting
 	docker
+	docker-compose
 	direnv
+	chezmoi
+	emoji
+	{{ if (eq .chezmoi.osRelease.id "arch") -}}
+	archlinux
+	{{- end }}
+	{{ if (eq .chezmoi.osRelease.id "debian") -}}
+	debian
+	{{- end }}
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -142,11 +151,6 @@ function venv () {
 if [ -n "$VIRTUAL_ENV" ]; then
     source $VIRTUAL_ENV/bin/activate;
 fi
-
-
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
 
 
 alias open="xdg-open"

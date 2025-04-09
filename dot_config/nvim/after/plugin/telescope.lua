@@ -10,7 +10,7 @@ require("telescope").setup({
 })
 
 -- Enable telescope fzf native, if installed
-require('telescope').load_extension('fzf')
+-- require('telescope').load_extension('fzf')
 
 local function in_git_repo()
   local handle = io.popen("git rev-parse --is-inside-work-tree 2> /dev/null")

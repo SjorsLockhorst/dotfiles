@@ -1,4 +1,3 @@
-{{ if (eq .chezmoi.osRelease.id "debian") -}}
 {{ $packages := list
 	"curl"
 	"git"
@@ -26,6 +25,30 @@
 	"tk-dev"
 	"fontconfig"
 	"bat"
+	"direnv"
+-}}
+
+{{ $packagesArch := list
+	"curl"
+	"git"
+	"vim"
+	"wget"
+	"ripgrep"
+	"fzf"
+	"python3"
+	"tmux"
+	"the_silver_searcher"
+	"jq"
+	"procps"
+	"unzip"
+	"fuse3"
+	"cmake"
+	"xdg-utils"
+	"age"
+	"desktop-file-utils"
+	"fontconfig"
+	"bat"
+	"direnv"
 -}}
 
 {{ $gui_packages := list
@@ -35,6 +58,7 @@
 
 {{ $zsh := list
 	"zsh"
+	"zsh-syntax-highlighting"
 -}}
 
 {{ $plasma_i3 := list
@@ -54,6 +78,8 @@
 	"ansible"
 	"borgbackup"
 -}}
+
+{{ if (eq .chezmoi.osRelease.id "debian") -}}
 
 #!/bin/sh
 # Add brave browser gpg
@@ -94,4 +120,19 @@ sudo apt-get install -y {{ $backup | join " " }}
 #!/bin/bash
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+{{ end -}}
+
+{{ if (eq .chezmoi.osRelease.id "arch") -}}
+#!/bin/bash
+
+sudo pacman -S --noconfirm --needed {{ $packagesArch | join " " }}
+
+{{ if .backup -}}
+sudo pacman -S --noconfirm --needed {{ $backup | join " " }}
+{{ end -}}
+
+{{ if .zsh -}}
+sudo pacman -Sy --noconfirm --needed {{ $zsh | join " " }}
+{{ end -}}
+
 {{ end -}}
