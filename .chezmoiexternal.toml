@@ -1,8 +1,9 @@
 {{ if (and (.nvim) (eq .chezmoi.osRelease.id "debian")) -}}
+{{ $nvimRelease := "0.10.4" -}}
 [".local/bin/nvim"]
     type = "file"
     executable = true
-    url = "https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage"
+    url = "https://github.com/neovim/neovim/releases/download/v{{ $nvimRelease }}/nvim-linux-x86_64.appimage"
     exact = true
 
 
