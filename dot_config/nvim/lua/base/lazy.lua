@@ -29,6 +29,7 @@ require("lazy").setup({
         build = ":TSUpdate",
     },
     { "shaunsingh/nord.nvim" },
+    { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
     { "windwp/nvim-ts-autotag" },
     { "alker0/chezmoi.vim" },
 

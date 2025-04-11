@@ -2,7 +2,7 @@
 -- See `:help lualine.txt`
 require('lualine').setup {
   options = {
-    theme = 'nord',
+    theme = 'catppuccin',
     component_separators = '|',
     section_separators = '',
   },
