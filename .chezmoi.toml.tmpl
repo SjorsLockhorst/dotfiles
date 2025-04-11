@@ -5,8 +5,14 @@
 {{- $gui_packages := promptBool "gui_packages" -}}
 {{- $latex := promptBool "latex" -}}
 {{- $obsidian := promptBool "obsidian" -}}
-
 {{- $backup := promptBool "backup" -}}
+
+encryption = "age"
+[age]
+    identity = "~/.config/chezmoi/key.txt"
+    recipient = "age148xe8j2rfawl9zz77cghmjkkzlav9qw8uw0xgdgg58pmxua4futq8v4f48"
+
+
 
 [data]
     email = {{ $email | quote }}
@@ -20,7 +26,3 @@
 
     nerd_font = "FiraCode"
 
-encryption = "age"
-[age]
-    identity = "~/.config/chezmoi/key.txt"
-    recipient = "age148xe8j2rfawl9zz77cghmjkkzlav9qw8uw0xgdgg58pmxua4futq8v4f48"
