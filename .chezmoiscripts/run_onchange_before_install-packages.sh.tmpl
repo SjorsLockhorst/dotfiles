@@ -51,6 +51,18 @@
 	"direnv"
 -}}
 
+{{ $hyprland := list
+	"hyprland"
+	"hyprlock"
+	"hypridle"
+	"hyprpaper"
+	"kitty"
+	"waybar"
+	"wofi"
+	"swaync"
+	"network-manager-applet"
+-}}
+
 {{ $gui_packages := list
 	"brave-browser"
 	"kitty"
@@ -132,7 +144,11 @@ sudo pacman -S --noconfirm --needed {{ $backup | join " " }}
 {{ end -}}
 
 {{ if .zsh -}}
-sudo pacman -Sy --noconfirm --needed {{ $zsh | join " " }}
+sudo pacman -S --noconfirm --needed {{ $zsh | join " " }}
+{{ end -}}
+
+{{ if .hyprland -}}
+sudo pacman -S --noconfirm --needed {{ $hyprland | join " " }}
 {{ end -}}
 
 {{ end -}}

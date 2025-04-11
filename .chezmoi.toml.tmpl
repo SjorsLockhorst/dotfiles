@@ -2,6 +2,7 @@
 {{- $zsh := promptBool "zsh" -}}
 {{- $nvim := promptBool "nvim" -}}
 {{- $plasma_i3 := promptBool "plasma_i3" -}}
+{{- $hyprland := promptBool "hyprland" -}}
 {{- $gui_packages := promptBool "gui_packages" -}}
 {{- $latex := promptBool "latex" -}}
 {{- $obsidian := promptBool "obsidian" -}}
@@ -19,6 +20,7 @@ encryption = "age"
     zsh = {{ $zsh }}
     nvim = {{ $nvim }}
     plasma_i3 = {{ $plasma_i3 }}
+    hyprland = {{ $hyprland }}
     gui_packages = {{ $gui_packages }}
     latex = {{ $latex }}
     obsidian = {{ $obsidian }}
