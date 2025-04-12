@@ -49,6 +49,12 @@
 	"fontconfig"
 	"bat"
 	"direnv"
+	"timeshift"
+	"grub-btrfs"
+-}}
+
+{{ $packagesAUR := list
+	"timeshift-autosnap"
 -}}
 
 {{ $hyprland := list
@@ -61,6 +67,11 @@
 	"wofi"
 	"swaync"
 	"network-manager-applet"
+	"qt5-wayland"
+	"qt6-wayland"
+	"pipewire"
+	"wireplumber"
+	"dolphin"
 -}}
 
 {{ $gui_packages := list
@@ -138,6 +149,7 @@ sudo apt-get install -y {{ $backup | join " " }}
 #!/bin/bash
 
 sudo pacman -S --noconfirm --needed {{ $packagesArch | join " " }}
+yay -S --noconfirm --needed {{ $packagesAUR | join " " }}
 
 {{ if .backup -}}
 sudo pacman -S --noconfirm --needed {{ $backup | join " " }}
