@@ -21,4 +21,5 @@ key.txt.age
 
 {{ if (not .backup) -}}
 ./dot_playbooks
+./local/bin/run_backup
 {{ end -}}
