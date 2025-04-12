@@ -111,7 +111,11 @@ require("lazy").setup({
         "iamcco/markdown-preview.nvim",
         build = function() vim.fn["mkdp#util#install"]() end
     },
-    { "lukas-reineke/headlines.nvim",     tag = "v3.3.4" },
+    {
+        "lukas-reineke/headlines.nvim",
+        dependencies = "nvim-treesitter/nvim-treesitter",
+        config = true, -- or `opts = {}`
+    },
 
     -- Jupyter Ascending
     { "untitled-ai/jupyter_ascending.vim" },

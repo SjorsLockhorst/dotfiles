@@ -3,13 +3,6 @@
   gather_facts: true
 
   tasks:
-    - name: Install BorgBackup package
-      apt:
-        name: borgbackup
-        state: present
-        update_cache: yes
-      become: true
-
     - name: Add borgbackup user
       user:
         name: borgbackup
