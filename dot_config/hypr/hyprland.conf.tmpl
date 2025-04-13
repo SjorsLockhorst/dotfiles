@@ -97,8 +97,8 @@ decoration {
     rounding_power = 2
 
     # Change transparency of focused and unfocused windows
-    active_opacity = 0.9
-    inactive_opacity = 0.8
+    active_opacity = 1.0
+    inactive_opacity = 0.9
 
     shadow {
         enabled = true
@@ -220,11 +220,12 @@ $mainMod = alt # Sets "Windows" key as main modifier
 bind = $mainMod, return, exec, $terminal
 bind = $mainModS SHIFT, Q, killactive,
 bind = $mainMod, M, exit,
-bind = $mainMod, F, exec, $fileManager
+# bind = $mainMod, F, exec, $fileManager
 bind = $mainMod, V, togglefloating,
 bind = $mainMod, D, exec, $menu
 bind = $mainMod, P, pseudo, # dwindle
 bind = $mainMod, E, togglesplit, # dwindle
+bind = $mainMod, F, fullscreen
 
 # Move focus with mainMod + arrow keys
 bind = $mainMod, h, movefocus, l
@@ -296,7 +297,8 @@ bindl = , XF86AudioPrev, exec, playerctl previous
 # See https://wiki.hyprland.org/Configuring/Workspace-Rules/ for workspace rules
 
 # Example windowrule
-# windowrule = float,class:^(kitty)$,title:^(kitty)$
+windowrule = opacity 0.9 override 0.8 override 0.9 override, class:kitty # set opacity to 1.0 active, 0.5 inactive and 0.8 fullscreen for kitty
+# windowrule = opacity 0.9 override 0.9, class:kitty, title:kitty
 
 # Ignore maximize requests from apps. You'll probably like this.
 windowrule = suppressevent maximize, class:.*
