@@ -70,9 +70,9 @@
   color: @blue;
 }
 
-#battery {
-  color: @green;
-}
+/* #battery { */
+/*   color: @green; */
+/* } */
 
 #cpu {
   color: @green;
@@ -82,7 +82,15 @@
   color: @green;
 }
 
+#battery.good:not(.charging) {
+  color: @text;
+}
+
 #battery.warning:not(.charging) {
+  color: @yellow;
+}
+
+#battery.critical:not(.charging) {
   color: @red;
 }
 
