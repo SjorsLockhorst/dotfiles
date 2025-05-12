@@ -3,6 +3,6 @@ function SetColors(color)
 	vim.cmd.colorscheme(color)
 end
 
-SetColors()
+SetColors("catppuccin-mocha")
 
 require("colorizer").setup()

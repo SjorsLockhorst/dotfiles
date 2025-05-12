@@ -172,6 +172,8 @@
       ansible.builtin.stat:
         path: /home/borgbackup/backup_storagebox.sh
       register: backup_script_stat
+      become: true
+      become_user: borgbackup
 
     - name: Add script for backups storagebox file
       ansible.builtin.copy:

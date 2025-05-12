@@ -15,18 +15,10 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
-    -- Plugin manager
-    { "wbthomason/packer.nvim" },
-
-    -- Telescope (Fuzzy Finder)
     {
         "nvim-telescope/telescope.nvim",
         tag = "0.1.4",
         dependencies = { "nvim-lua/plenary.nvim" }
-    },
-    {
-        "nvim-telescope/telescope-fzf-native.nvim",
-        build = "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release",
     },
 
     -- Syntax Highlighting & Parsing
@@ -35,6 +27,7 @@ require("lazy").setup({
         build = ":TSUpdate",
     },
     { "shaunsingh/nord.nvim" },
+    { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
     { "windwp/nvim-ts-autotag" },
     { "alker0/chezmoi.vim" },
 
@@ -236,7 +229,6 @@ require("lazy").setup({
         "iamcco/markdown-preview.nvim",
         build = function() vim.fn["mkdp#util#install"]() end
     },
-
     -- Jupyter Ascending
     { "untitled-ai/jupyter_ascending.vim" },
 

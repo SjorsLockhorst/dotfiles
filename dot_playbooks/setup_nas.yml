@@ -5,6 +5,7 @@
   vars:
     authorized_keys_content: "command=\"borg serve --restrict-to-repository ~/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
     tmp_ssh_key_path: "/tmp/nas-backup"
+    home_dir: "/home/zenbook-arch"
   tasks:
     - name: Ping NAS to check if it's up
       wait_for:
@@ -19,7 +20,7 @@
         name: "nas.home.lan"
         groups: "nas_group"
         ansible_user: "sjors"
-        ansible_ssh_private_key_file: "~/.ssh/id_rsa"
+        ansible_ssh_private_key_file: "/home/sjors/.ssh/id_rsa"
         user_name: "{{ ansible_hostname }}"
         home_directory: "{{ home_dir }}"
 

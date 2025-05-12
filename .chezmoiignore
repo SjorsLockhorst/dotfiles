@@ -6,6 +6,14 @@ key.txt.age
 .xsessionrc
 {{ end -}}
 
+{{ if (not .hyprland) -}}
+.config/waybar/
+.config/waybar/**
+.config/hypr/
+.config/hypr/**
+{{ end -}}
+
+
 {{ if (not .obsidian) -}}
 ./applications/obsidian.desktop
 ./applications/mimeapps.list
@@ -13,4 +21,5 @@ key.txt.age
 
 {{ if (not .backup) -}}
 ./dot_playbooks
+./local/bin/run_backup
 {{ end -}}

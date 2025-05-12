@@ -2,17 +2,25 @@
 {{- $zsh := promptBool "zsh" -}}
 {{- $nvim := promptBool "nvim" -}}
 {{- $plasma_i3 := promptBool "plasma_i3" -}}
+{{- $hyprland := promptBool "hyprland" -}}
 {{- $gui_packages := promptBool "gui_packages" -}}
 {{- $latex := promptBool "latex" -}}
 {{- $obsidian := promptBool "obsidian" -}}
-
 {{- $backup := promptBool "backup" -}}
+
+encryption = "age"
+[age]
+    identity = "~/.config/chezmoi/key.txt"
+    recipient = "age148xe8j2rfawl9zz77cghmjkkzlav9qw8uw0xgdgg58pmxua4futq8v4f48"
+
+
 
 [data]
     email = {{ $email | quote }}
     zsh = {{ $zsh }}
     nvim = {{ $nvim }}
     plasma_i3 = {{ $plasma_i3 }}
+    hyprland = {{ $hyprland }}
     gui_packages = {{ $gui_packages }}
     latex = {{ $latex }}
     obsidian = {{ $obsidian }}
@@ -20,7 +28,3 @@
 
     nerd_font = "FiraCode"
 
-encryption = "age"
-[age]
-    identity = "~/.config/chezmoi/key.txt"
-    recipient = "age148xe8j2rfawl9zz77cghmjkkzlav9qw8uw0xgdgg58pmxua4futq8v4f48"

@@ -1,6 +1,8 @@
 {{ if (.zsh)  -}}
 #!/bin/sh
 
+echo 'Running installation script for ZSH'
+
 # Make sure that user wants zsh and is not on Windows
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
 	export RUNZSH=${RUNZSH:-no}
@@ -11,6 +13,12 @@ fi
 if [ ! -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting ]; then
 	# Get syntax highlighting
 	git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+fi
+
+if [ ! -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/themes/catppuccin_mocha-zsh-syntax-highlighting.zsh ]; then
+	# Get syntax highlighting theme
+	wget https://raw.githubusercontent.com/catppuccin/zsh-syntax-highlighting/refs/heads/main/themes/catppuccin_mocha-zsh-syntax-highlighting.zsh -O ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/themes/catppuccin_mocha-zsh-syntax-highlighting.zsh
+
 fi
 
 {{ end -}}
