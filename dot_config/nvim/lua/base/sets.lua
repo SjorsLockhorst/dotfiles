@@ -83,15 +83,6 @@ local function set_indentation_4 ()
     vim.bo.expandtab = true
 end
 
--- Coconut stuffs
-vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
-  pattern = {"*.ccn", "*.cvc"},
-  callback = function()
-    set_indentation_4()
-    vim.diagnostic.disable()
-  end,
-})
-
 -- C set indentation 4
 vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
   pattern = {"*.c"},
@@ -99,3 +90,4 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
     set_indentation_4()
   end,
 })
+
