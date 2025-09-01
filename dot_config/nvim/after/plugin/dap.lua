@@ -17,7 +17,11 @@ vim.keymap.set("n", "<F5>", dap.step_back)
 vim.keymap.set("n", "<leader>dp", dapui.float_element)
 
 local mason_path = vim.fn.glob(vim.fn.stdpath "data" .. "/mason/")
-require("dap-python").setup(mason_path .. "packages/debugpy/venv/bin/python")
+-- require("dap-python").setup(mason_path .. "packages/debugpy/venv/bin/python")
+require("dap-python").setup("uv")
+require("dap-python").test_runner = "pytest"
+vim.keymap.set("n", "<leader>tm", require("dap-python").test_method)
+
 require("mason-nvim-dap").setup({
 	ensure_installed = { "python" }
 })

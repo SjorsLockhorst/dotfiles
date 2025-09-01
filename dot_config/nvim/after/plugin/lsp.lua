@@ -36,7 +36,6 @@ vim.lsp.config('lua_ls', {
   }
 })
 
-vim.lsp.enable({ "lua_ls", "pyright" })
 
 vim.lsp.config("pylsp", {
   settings = {
