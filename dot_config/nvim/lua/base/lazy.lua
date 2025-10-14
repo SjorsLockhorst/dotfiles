@@ -27,7 +27,7 @@ require("lazy").setup({
         build = ":TSUpdate",
     },
     { "shaunsingh/nord.nvim" },
-    { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
+    { "catppuccin/nvim",                    name = "catppuccin", priority = 1000 },
     { "windwp/nvim-ts-autotag" },
     { "alker0/chezmoi.vim" },
 
@@ -62,7 +62,14 @@ require("lazy").setup({
     -- LSP & Autocompletion
     { "neovim/nvim-lspconfig" },
     { "mason-org/mason.nvim" },
-    { "mason-org/mason-lspconfig.nvim" },
+    {
+        "mason-org/mason-lspconfig.nvim",
+        opts = {},
+        dependencies = {
+            { "mason-org/mason.nvim", opts = {} },
+            "neovim/nvim-lspconfig",
+        },
+    },
     { "L3MON4D3/LuaSnip" },
     { "rafamadriz/friendly-snippets" },
     { "j-hui/fidget.nvim" },
@@ -268,33 +275,37 @@ require("lazy").setup({
     { "mechatroner/rainbow_csv" },
     {
         "yetone/avante.nvim",
-        event = "VeryLazy",
-        version = false,         -- Never set this value to "*"! Never!
-        opts = {
-            provider = "claude", -- The provider used in Aider mode or in the planning phase of Cursor Planning Mode
-            -- WARNING: Since auto-suggestions are a high-frequency operation and therefore expensive,
-            -- currently designating it as `copilot` provider is dangerous because: https://github.com/yetone/avante.nvim/issues/1048
-            -- Of course, you can reduce the request frequency by increasing `suggestion.debounce`.
-            auto_suggestions_provider = "claude",
-            cursor_applying_provider = nil, -- The provider used in the applying phase of Cursor Planning Mode, defaults to nil, when nil uses Config.provider as the provider for the applying phase
-            claude = {
-                endpoint = "https://api.anthropic.com",
-                model = "claude-3-5-sonnet-20241022",
-                temperature = 0,
-                max_tokens = 4096,
-                disable_tools = true
-            },
-            -- add any opts here
-            -- WARNING: Since auto-suggestions are a high-frequency operation and therefore expensive,
-            -- currently designating it as `copilot` provider is dangerous because: https://github.com/yetone/avante.nvim/issues/1048
-            -- Of course, you can reduce the request frequency by increasing `suggestion.debounce`.
-        },
         -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
-        build = "make",
-        -- build = "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false" -- for windows
+        -- ⚠️ must add this setting! ! !
+        build = function()
+            -- conditionally use the correct build system for the current OS
+            if vim.fn.has("win32") == 1 then
+                return "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false"
+            else
+                return "make"
+            end
+        end,
+        event = "VeryLazy",
+        version = false, -- Never set this value to "*"! Never!
+        ---@module 'avante'
+        ---@type avante.Config
+        opts = {
+            -- add any opts here
+            -- for example
+            provider = "claude",
+            providers = {
+                claude = {
+                    endpoint = "https://api.anthropic.com",
+                    model = "claude-sonnet-4-20250514",
+                    timeout = 30000, -- Timeout in milliseconds
+                    extra_request_body = {
+                        temperature = 0.75,
+                        max_tokens = 20480,
+                    },
+                },
+            },
+        },
         dependencies = {
-            "nvim-treesitter/nvim-treesitter",
-            "stevearc/dressing.nvim",
             "nvim-lua/plenary.nvim",
             "MunifTanjim/nui.nvim",
             --- The below dependencies are optional,
@@ -302,6 +313,8 @@ require("lazy").setup({
             "nvim-telescope/telescope.nvim", -- for file_selector provider telescope
             "hrsh7th/nvim-cmp",              -- autocompletion for avante commands and mentions
             "ibhagwan/fzf-lua",              -- for file_selector provider fzf
+            "stevearc/dressing.nvim",        -- for input provider dressing
+            "folke/snacks.nvim",             -- for input provider snacks
             "nvim-tree/nvim-web-devicons",   -- or echasnovski/mini.icons
             "zbirenbaum/copilot.lua",        -- for providers='copilot'
             {

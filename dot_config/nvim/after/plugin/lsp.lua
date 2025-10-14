@@ -36,7 +36,19 @@ vim.lsp.config('lua_ls', {
   }
 })
 
-vim.lsp.enable({ "lua_ls", "pyright" })
+vim.lsp.config('pyright', {
+  settings = {
+    -- Using Ruff's import organizer
+    disableOrganizeImports = true,
+    python = {
+      analysis = {
+        -- Ignore all files for analysis to exclusively use Ruff for linting
+        ignore = { '*' },
+      },
+    },
+  },
+})
+
 
 vim.lsp.config("pylsp", {
   settings = {
@@ -45,6 +57,16 @@ vim.lsp.config("pylsp", {
     }
   }
 })
+
+-- Required: Enable the language server
+vim.lsp.config("ty", {
+  settings = {
+  },
+  cmd = { "ty", "server" },
+  filetypes = { "python" },
+  root_markers = { ".git", "pyproject.toml" }
+})
+vim.lsp.enable('ty')
 
 
 local capabilities = {
@@ -97,6 +119,12 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.keymap.set("n", '<leader>wl', function()
       print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
     end, opts)
+    local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
+
+    if client.name == "ty" then
+      client.server_capabilities.hoverProvider = false
+      client.server_capabilities.definitionProvider = false
+    end
   end
 })
 
