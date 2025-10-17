@@ -1,0 +1,111 @@
+{{ if .hyprland -}}
+#!/bin/bash
+
+# ==============================================================================
+# SDDM Theme Installer & Configurator
+#
+# Description:
+#   This script downloads a given SDDM theme from a URL, extracts it to the
+#   correct system directory, and updates the /etc/sddm.conf file to
+#   make the new theme the current default.
+#
+#   It's smart enough to remove the common '-sddm' suffix from the filename
+#   when setting the theme name in the configuration file.
+#
+# Usage:
+#   ./install_sddm_theme.sh [THEME_DOWNLOAD_URL]
+#
+#   If no URL is provided, it will use the default Catppuccin theme.
+# ==============================================================================
+
+# --- Configuration ---
+# The system directory where SDDM themes are stored
+DEST_DIR="/usr/share/sddm/themes"
+SDDM_CONF_FILE="/etc/sddm.conf"
+
+# Default theme to use if no URL is provided as an argument
+DEFAULT_THEME_URL="https://github.com/catppuccin/sddm/releases/download/v1.1.2/catppuccin-macchiato-rosewater-sddm.zip"
+# ---------------------
+
+# Exit immediately if any command fails
+set -e
+
+# --- Initial Checks ---
+# Check if essential commands are available
+for cmd in wget unzip mktemp sudo; do
+  if ! command -v $cmd &> /dev/null; then
+    echo "Error: Required command '$cmd' is not installed. Please install it and try again."
+    exit 1
+  fi
+done
+
+# Check if a URL was passed as an argument, otherwise use the default
+if [ -n "$1" ]; then
+  THEME_URL="$1"
+  echo "Using provided URL: $THEME_URL"
+else
+  THEME_URL="$DEFAULT_THEME_URL"
+  echo "No URL provided. Using default Catppuccin theme."
+fi
+
+# --- Theme Name Derivation ---
+# Get the filename from the URL (e.g., theme-name.zip)
+ZIP_FILE=$(basename "$THEME_URL")
+
+# Get the name of the directory that unzip will create (e.g., theme-name-sddm)
+THEME_DIR_NAME="${ZIP_FILE%.zip}"
+
+# Get the theme name for the config file by removing the common '-sddm' suffix
+CONFIG_THEME_NAME="${THEME_DIR_NAME%-sddm}"
+
+if [ -z "$THEME_DIR_NAME" ] || [ -z "$CONFIG_THEME_NAME" ]; then
+    echo "Error: Could not determine theme names from URL."
+    exit 1
+fi
+echo "Theme directory to be installed: $THEME_DIR_NAME"
+echo "Theme name for config file:      $CONFIG_THEME_NAME"
+
+
+# --- Main Script ---
+# Create a unique temporary directory to work in for safety
+TEMP_DIR=$(mktemp -d)
+
+# Set up a "trap" to automatically clean up the temporary directory
+# when the script exits, for any reason (success or failure).
+trap 'echo "Cleaning up temporary files..."; rm -rf "$TEMP_DIR"' EXIT
+
+echo "Created temporary directory at: $TEMP_DIR"
+cd "$TEMP_DIR"
+
+# 1. Download the theme zip file
+echo "Downloading theme..."
+wget -q --show-progress "$THEME_URL"
+
+# 2. Unzip the theme into the system themes folder
+echo "Installing theme to $DEST_DIR..."
+echo "You may be prompted for your password for 'sudo'."
+sudo unzip -q "$ZIP_FILE" -d "$DEST_DIR"
+
+# 3. Create or update the SDDM configuration
+echo "Configuring SDDM..."
+# First, back up the existing configuration if it exists
+if [ -f "$SDDM_CONF_FILE" ]; then
+    echo "Backing up existing config to ${SDDM_CONF_FILE}.bak..."
+    sudo cp "$SDDM_CONF_FILE" "${SDDM_CONF_FILE}.bak"
+fi
+
+# Prepare the new configuration content
+# This uses the $CONFIG_THEME_NAME (without the -sddm suffix)
+CONF_CONTENT=$(printf "[Theme]\nCurrent=%s\n" "$CONFIG_THEME_NAME")
+
+# Write the new configuration file using sudo and tee
+echo "Writing new configuration to $SDDM_CONF_FILE..."
+echo "$CONF_CONTENT" | sudo tee "$SDDM_CONF_FILE" > /dev/null
+
+echo "✅ Success! Theme '$CONFIG_THEME_NAME' has been installed and set as the current theme."
+echo "(Theme files are located in: $DEST_DIR/$THEME_DIR_NAME)"
+echo "You may need to reboot for the changes to take effect."
+
+# The script will now exit, and the 'trap' will automatically clean up the temp directory.
+{{- end }}
+
