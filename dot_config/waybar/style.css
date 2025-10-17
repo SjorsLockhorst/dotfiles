@@ -52,6 +52,7 @@
 #clock,
 #battery,
 #pulseaudio,
+#wireplumber,
 #custom-lock,
 #custom-power {
   background-color: @surface0;
