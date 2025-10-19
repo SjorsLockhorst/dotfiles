@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# --- Configuration ---
+# IMPORTANT: Replace 'your_alias_goes_here' with the actual alias you want to run.
+ALIAS_TO_RUN="venv"
+
+# --- Script ---
+
+# Define the working directory and session name
+WORK_DIR="$HOME/work/core-ai"
+SESSION_NAME="core-ai"
+
+# Check if the target directory exists
+if [ ! -d "$WORK_DIR" ]; then
+    echo "Error: Directory '$WORK_DIR' does not exist."
+    echo "Please create it before running this script."
+    exit 1
+fi
+
+echo "Changing directory to $WORK_DIR..."
+cd "$WORK_DIR" || exit
+
+# Check if a tmux session with the same name is already running
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Session '$SESSION_NAME' already exists."
+else
+    echo "Creating new tmux session '$SESSION_NAME'..."
+    # Create a new, detached tmux session.
+    # We execute 'zsh -i -c' to ensure your ~/.zshrc is sourced, making the alias available.
+    # The 'exec zsh' at the end is crucial; it starts a new interactive shell after your
+    # alias completes, which keeps the tmux pane from closing automatically.
+    tmux new-session -d -s "$SESSION_NAME" "zsh -i -c '$ALIAS_TO_RUN; exec zsh'"
+fi
+
+# Attach to the tmux session
+echo "Attaching to session '$SESSION_NAME'..."
+tmux attach-session -t "$SESSION_NAME"
