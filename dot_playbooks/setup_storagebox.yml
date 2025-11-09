@@ -128,6 +128,19 @@
       debug:
         msg: "Repo url is {{ repo_url }}"
 
+    - name: Add configuration to storagebox file
+      ansible.builtin.copy:
+        dest: "/home/borgbackup/targets/storagebox"
+        content: |
+          export BORG_RSH="ssh -i /home/borgbackup/.ssh/storagebox-backup"
+          export BORG_PASSPHRASE="{{ borg_passphrase }}"
+          export BORG_REPO="{{ repo_url }}"
+        owner: borgbackup
+        group: borgbackup
+        mode: '0640'
+      become: true
+      become_user: borgbackup
+
     - name: Check if Borg repository exists
       ansible.builtin.command:
         cmd: "borg info"
@@ -148,6 +161,7 @@
         BORG_PASSPHRASE: "{{ borg_passphrase }}"
         BORG_REPO: "{{ repo_url }}"
       when: repo_check.failed
+      ignore_errors: true
       become: true
       become_user: borgbackup
 
@@ -155,18 +169,6 @@
       ansible.builtin.debug:
         msg: "Borg repo is set up! You can now connect to it with {{ repo_url }}"
 
-    - name: Add configuration to storagebox file
-      ansible.builtin.copy:
-        dest: "/home/borgbackup/targets/storagebox"
-        content: |
-          export BORG_RSH="ssh -i /home/borgbackup/.ssh/storagebox-backup"
-          export BORG_PASSPHRASE="{{ borg_passphrase }}"
-          export BORG_REPO="{{ repo_url }}"
-        owner: borgbackup
-        group: borgbackup
-        mode: '0640'
-      become: true
-      become_user: borgbackup
 
     - name: Check if the file exists
       ansible.builtin.stat:

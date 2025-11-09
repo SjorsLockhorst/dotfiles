@@ -7,7 +7,6 @@
       user:
         name: borgbackup
         createhome: yes
-        groups: sudo
         append: yes
         state: present
       become: true
