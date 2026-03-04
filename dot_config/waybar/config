@@ -24,6 +24,7 @@
         "battery",
         "battery#bat2",
         "clock",
+        "custom/pomodoro",
         "bluetooth",
         "tray",
         "custom/updates",
@@ -198,7 +199,8 @@
             "shutdown": "shutdown now",
             "reboot": "reboot",
             "suspend": "systemctl suspend",
-            "hibernate": "systemctl hibernate"
+            "hibernate": "systemctl hibernate",
+            "logout": "hyprctl dispatch exit"
         }
     },
     "custom/updates": {
@@ -210,5 +212,12 @@
         },
         "exec-if": "which waybar-module-pacman-updates",
         "exec": "waybar-module-pacman-updates --interval-seconds 5 --network-interval-seconds 300"
+    },
+    "custom/pomodoro": {
+      "format": "{}",
+      "return-type": "json",
+      "exec": "waybar-module-pomodoro",
+      "on-click": "waybar-module-pomodoro toggle",
+      "on-click-right": "waybar-module-pomodoro reset"
     }
 }

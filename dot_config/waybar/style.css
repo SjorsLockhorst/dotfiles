@@ -54,7 +54,9 @@
 #wireplumber,
 #custom-lock,
 #custom-updates,
-#custom-power {
+#custom-pomodoro,
+#custom-power
+{
   background-color: @surface0;
   padding: 0.5rem 1rem;
   margin: 5px 0;
@@ -120,6 +122,9 @@
 #custom-power {
     margin-right: 1rem;
     border-radius: 0px 1rem 1rem 0px;
+    color: @red;
+}
+#custom-pomodoro {
     color: @red;
 }
 
