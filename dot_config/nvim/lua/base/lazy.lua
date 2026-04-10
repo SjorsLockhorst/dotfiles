@@ -14,34 +14,57 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+
 require("lazy").setup({
+    {
+        'alexghergh/nvim-tmux-navigation',
+        config = function()
+            local set_keymaps = function()
+                require 'nvim-tmux-navigation'.setup {
+                    disable_when_zoomed = true, -- defaults to false
+                    keybindings = {
+                        left = "<C-h>",
+                        down = "<C-j>",
+                        up = "<C-k>",
+                        right = "<C-l>",
+                        last_active = "<C-\\>",
+                        next = "<C-Space>",
+                    }
+                }
+            end
+            set_keymaps()
+
+            vim.api.nvim_create_autocmd("TermEnter", {
+                callback = set_keymaps,
+            })
+        end
+    },
     {
         "nickjvandyke/opencode.nvim",
         version = "*", -- Latest stable release
-        dependencies = {
-            {
-                -- `snacks.nvim` integration is recommended, but optional
-                ---@module "snacks" <- Loads `snacks.nvim` types for configuration intellisense
-                "folke/snacks.nvim",
-                optional = true,
-                opts = {
-                    terminal = {},
-                    input = {}, -- Enhances `ask()`
-                    picker = {  -- Enhances `select()`
-                        actions = {
-                            opencode_send = function(...) return require("opencode").snacks_picker_send(...) end,
-                        },
-                        win = {
-                            input = {
-                                keys = {
-                                    ["<a-a>"] = { "opencode_send", mode = { "n", "i" } },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
+        -- dependencies = {
+        --     {
+        --         -- `snacks.nvim` integration is recommended, but optional
+        --         ---@module "snacks" <- Loads `snacks.nvim` types for configuration intellisense
+        --         "folke/snacks.nvim",
+        --         optional = true,
+        --         opts = {
+        --             input = {}, -- Enhances `ask()`
+        --             picker = {  -- Enhances `select()`
+        --                 actions = {
+        --                     opencode_send = function(...) return require("opencode").snacks_picker_send(...) end,
+        --                 },
+        --                 win = {
+        --                     input = {
+        --                         keys = {
+        --                             ["<a-a>"] = { "opencode_send", mode = { "n", "i" } },
+        --                         },
+        --                     },
+        --                 },
+        --             },
+        --         },
+        --     },
+        -- },
         config = function()
             ---@type opencode.Opts
             vim.g.opencode_opts = {
@@ -55,7 +78,7 @@ require("lazy").setup({
                 { desc = "Ask opencode…" })
             vim.keymap.set({ "n", "x" }, "<C-x>", function() require("opencode").select() end,
                 { desc = "Execute opencode action…" })
-            vim.keymap.set({ "n", "t" }, "<C-.>", function() require("opencode").toggle() end,
+            vim.keymap.set({ "n", "t" }, "<leader>.", function() require("opencode").toggle() end,
                 { desc = "Toggle opencode" })
 
             vim.keymap.set({ "n", "x" }, "go", function() return require("opencode").operator("@this ") end,
@@ -105,7 +128,7 @@ require("lazy").setup({
     { "tpope/vim-repeat" },
 
     -- Tmux Navigation
-    { "christoomey/vim-tmux-navigator" },
+    -- { "christoomey/vim-tmux-navigator"
 
     -- Commenting
     { "numToStr/Comment.nvim" },
@@ -269,7 +292,7 @@ require("lazy").setup({
     { 'saadparwaiz1/cmp_luasnip' },
     -- Jupyter Notebook Support
     { "jpalardy/vim-slime" },
-    { "hanschen/vim-ipython-cell" },
+    -- { "hanschen/vim-ipython-cell" },
     { "bfredl/nvim-ipy" },
 
     -- Debugging

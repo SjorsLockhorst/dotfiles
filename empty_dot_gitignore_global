@@ -1,3 +1,7 @@
 CLAUDE.md
 AGENTS.md
 .venv
+.claude/
+opencode.json
+SESSION_STATE.md
+.opencode/
