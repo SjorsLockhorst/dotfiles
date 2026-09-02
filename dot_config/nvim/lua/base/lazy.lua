@@ -98,15 +98,14 @@ require("lazy").setup({
     },
     {
         "nvim-telescope/telescope.nvim",
-        tag = "v0.2.1",
         dependencies = { "nvim-lua/plenary.nvim" }
     },
 
     -- Syntax Highlighting & Parsing
     {
         "nvim-treesitter/nvim-treesitter",
-        lazy = false,
-        branch = 'main',
+        lazy = false, -- this plugin does not support lazy-loading
+        branch = 'main', -- REQUIRED for Neovim 0.12+ (master is locked to <=0.11)
         build = ":TSUpdate",
     },
     { "shaunsingh/nord.nvim" },
@@ -352,4 +351,95 @@ require("lazy").setup({
 
     -- CSV Highlighting
     { "mechatroner/rainbow_csv" },
+    {
+      "pwntester/octo.nvim",
+      cmd = "Octo",
+      opts = {
+        -- or "fzf-lua" or "snacks" or "default"
+          picker = "telescope",
+        -- bare Octo command opens picker of commands
+          enable_builtin = true,
+      },
+      keys = {
+        {
+          "<leader>oi",
+          "<CMD>Octo issue list<CR>",
+          desc = "List GitHub Issues",
+        },
+        {
+          "<leader>op",
+          "<CMD>Octo pr list<CR>",
+          desc = "List GitHub PullRequests",
+        },
+        {
+          "<leader>od",
+          "<CMD>Octo discussion list<CR>",
+          desc = "List GitHub Discussions",
+        },
+        {
+          "<leader>on",
+          "<CMD>Octo notification list<CR>",
+          desc = "List GitHub Notifications",
+        },
+        {
+          "<leader>os",
+          function()
+            require("octo.utils").create_base_search_command { include_current_repo = true }
+          end,
+            desc = "Search GitHub",
+        },
+      },
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-telescope/telescope.nvim",
+        -- OR "ibhagwan/fzf-lua",
+        -- OR "folke/snacks.nvim",
+        "nvim-tree/nvim-web-devicons", -- optional if file_panel.icons is a function
+      },
+    },
+    { "sindrets/diffview.nvim" } ,
+    {
+      "kdheepak/lazygit.nvim",
+      lazy = true,
+      cmd = {
+        "LazyGit",
+        "LazyGitConfig",
+        "LazyGitCurrentFile",
+        "LazyGitFilter",
+        "LazyGitFilterCurrentFile",
+      },
+      -- optional for floating window border decoration
+        dependencies = {
+          "nvim-lua/plenary.nvim",
+        },
+      -- setting the keybinding for LazyGit with 'keys' is recommended in
+        -- order to load the plugin when the command is run for the first time
+        keys = {
+          { "<leader>lg", "<cmd>LazyGit<cr>", desc = "LazyGit" }
+        }
+    },
+    {
+      "ThePrimeagen/git-worktree.nvim",
+      dependencies = { "nvim-telescope/telescope.nvim" },
+      config = function()
+        require("git-worktree").setup()
+        require("telescope").load_extension("git_worktree")
+        end,
+      keys = {
+        {
+          "<leader>gw",
+          function()
+            require("telescope").extensions.git_worktree.git_worktrees()
+            end,
+          desc = "Switch Worktrees",
+        },
+        {
+          "<leader>gW",
+          function()
+            require("telescope").extensions.git_worktree.create_git_worktree()
+            end,
+          desc = "Create Worktree",
+        },
+      },
+    }
 })
