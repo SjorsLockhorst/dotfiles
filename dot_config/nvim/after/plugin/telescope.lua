@@ -1,5 +1,24 @@
 require("telescope").setup({
   defaults = {
+    -- rg args used by live_grep / grep_string. Tuned to keep the UI from
+    -- stalling on large codebases: cap absurdly long lines and skip dirs/files
+    -- that produce huge, useless match floods on short queries.
+    vimgrep_arguments = {
+      'rg',
+      '--color=never',
+      '--no-heading',
+      '--with-filename',
+      '--line-number',
+      '--column',
+      '--smart-case',
+      '--max-columns=200',           -- don't ship minified/one-line files into Lua
+      '--max-columns-preview',
+      '--glob=!**/.git/*',
+      '--glob=!**/node_modules/*',
+      '--glob=!**/*.min.*',
+      '--glob=!**/*.lock',
+      '--glob=!**/package-lock.json',
+    },
     mappings = {
       i = {
         ['<C-u>'] = false,
@@ -7,10 +26,18 @@ require("telescope").setup({
       },
     },
   },
+  extensions = {
+    fzf = {
+      fuzzy = true,
+      override_generic_sorter = true,
+      override_file_sorter = true,
+      case_mode = 'smart_case',
+    },
+  },
 })
 
--- Enable telescope fzf native, if installed
--- require('telescope').load_extension('fzf')
+-- Enable telescope fzf native (compiled C sorter; installed via lazy.lua).
+require('telescope').load_extension('fzf')
 
 local function in_git_repo()
   local handle = io.popen("git rev-parse --is-inside-work-tree 2> /dev/null")
