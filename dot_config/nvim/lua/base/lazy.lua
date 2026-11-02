@@ -399,7 +399,25 @@ require("lazy").setup({
             "nvim-tree/nvim-web-devicons", -- optional if file_panel.icons is a function
         },
     },
-    { "sindrets/diffview.nvim" },
+    {
+        "sindrets/diffview.nvim",
+        cmd = {
+            "DiffviewOpen",
+            "DiffviewClose",
+            "DiffviewFileHistory",
+        },
+        keys = {
+            { "<leader>gd", "<cmd>DiffviewOpen<cr>", desc = "Diffview: open" },
+            { "<leader>gD", "<cmd>DiffviewClose<cr>", desc = "Diffview: close" },
+            { "<leader>gh", "<cmd>DiffviewFileHistory<cr>", desc = "Diffview: repo history" },
+            { "<leader>gH", "<cmd>DiffviewFileHistory %<cr>", desc = "Diffview: file history" },
+            {
+                "<leader>gm",
+                "<cmd>DiffviewOpen origin/master...HEAD --imply-local<cr>",
+                desc = "Diffview: diff vs origin/master",
+            },
+        },
+    },
     {
         "kdheepak/lazygit.nvim",
         lazy = true,

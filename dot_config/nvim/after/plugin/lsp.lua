@@ -43,38 +43,10 @@ vim.lsp.config('pyright', {
   },
 })
 
-vim.lsp.config('ty', {
-  settings = {
-    -- Using Ruff's import organizer
-    disableOrganizeImports = true,
-    python = {
-      analysis = {
-        -- Ignore all files for analysis to exclusively use Ruff for linting
-        ignore = { '*' },
-      },
-    },
-  },
-})
-
-
-vim.lsp.config("pylsp", {
-  settings = {
-    pylsp = {
-      plugins = {}
-    }
-  }
-})
-
--- Required: Enable the language server
-vim.lsp.config("ty", {
-  settings = {
-  },
-  cmd = { "ty", "server" },
-  filetypes = { "python" },
-  root_markers = { ".git", "pyproject.toml" }
-})
-vim.lsp.enable('ty')
-
+-- Python setup: pyright (from mason, auto-enabled by mason-lspconfig) provides
+-- navigation + type-checking, and ruff provides lint/format. In the
+-- platform-monorepo, pyright roots at the repo top level (pyrightconfig.json is
+-- its highest-priority root marker) and reads the .venv + extraPaths from there.
 
 local capabilities = {
   textDocument = {
@@ -126,12 +98,6 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.keymap.set("n", '<leader>wl', function()
       print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
     end, opts)
-    local client = assert(vim.lsp.get_client_by_id(args.data.client_id))
-
-    if client.name == "ty" then
-      client.server_capabilities.hoverProvider = false
-      client.server_capabilities.definitionProvider = false
-    end
   end
 })
 
