@@ -1,0 +1,23 @@
+{{ if (eq .chezmoi.osRelease.id "arch") -}}
+#!/bin/bash
+# Enable the system services the configs rely on (a fresh install has them
+# installed but off). Only starts them when systemd is running (not in Docker).
+set -euo pipefail
+
+services=(grub-btrfsd.service)
+{{ if .hyprland -}}
+# sddm: login screen. NetworkManager: wifi-menu/waybar-vpn. bluetooth: blueberry.
+# docker.socket: waybar-docker/lazydocker (socket-activated, like this machine).
+services+=(sddm.service NetworkManager.service bluetooth.service power-profiles-daemon.service
+    tailscaled.service docker.socket)
+{{ end -}}
+
+now=()
+[[ -d /run/systemd/system ]] && now=(--now)
+sudo systemctl enable "${now[@]}" "${services[@]}"
+
+{{ if .hyprland -}}
+# docker without sudo (waybar-docker, lazydocker); takes effect on next login
+sudo usermod -aG docker "$(id -un)"
+{{ end -}}
+{{ end -}}

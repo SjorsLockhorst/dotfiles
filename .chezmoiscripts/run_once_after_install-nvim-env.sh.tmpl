@@ -1,4 +1,4 @@
-{{ if (and (.nvim) (or (eq .chezmoi.os "linux")) (eq .chezmoi.os "darwin")) -}}
+{{ if (and .nvim (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin"))) -}}
 
 {{ $packages := list
 	"pynvim"
@@ -6,7 +6,8 @@
 
 #!/bin/bash
 
-cd 
+set -e
+cd
 python3 -m venv nvim-env
 source nvim-env/bin/activate
 pip install --upgrade pip

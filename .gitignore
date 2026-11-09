@@ -1,0 +1,9 @@
+# Docker test logs (test/run.sh)
+test/out/
+
+# Runtime logs written by apps, never source
+*.log
+
+# The managed ~/.gitignore_global ignores opencode.json everywhere, but this
+# repo's own opencode config must be committed
+!dot_config/opencode/opencode.json

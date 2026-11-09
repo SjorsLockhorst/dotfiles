@@ -129,6 +129,11 @@ if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
 fi
 
+# alpaca (systemd user service) applies the ./z tenant PAC for CLI tools
+export http_proxy=http://127.0.0.1:3128 https_proxy=http://127.0.0.1:3128
+export HTTP_PROXY=$http_proxy HTTPS_PROXY=$https_proxy
+export no_proxy=localhost,127.0.0.1,::1 NO_PROXY=localhost,127.0.0.1,::1
+
 # Activation of virtual-env 
 function venv () {
     if [ -n "$1" ]; then

@@ -88,3 +88,21 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - waybar 0.15 custom modules: `{}` in a format next to `{icon}` errors; use `{text}`.
 - Reload: `pkill -USR2 -x waybar` (styles/config). Restart detached: `setsid -f waybar`.
   Screenshot to check: `grim -o eDP-1 out.png`.
+
+## Testing a fresh install (Docker)
+- `test/run.sh` builds a vanilla Arch image (`test/Dockerfile`: base + sudo user `sjors` + chezmoi
+  + bats), runs `chezmoi init --apply` with THIS machine's `chezmoi data` as prompt answers, then
+  the bats tests in `test/tests/`. Logs in `test/out/` (gitignored). `--remote` tests the pushed
+  repo instead of the working tree, `--shell` opens a shell in the container afterwards.
+- Takes ~15+ min and re-downloads everything on purpose (realism over speed).
+- The age key is mounted read-only at runtime, never baked into the image.
+- Uses `--network host`: Tailscale DNS (100.100.100.100) is unreachable from Docker's bridge.
+- Apply runs with stdin `/dev/null`, so any script that prompts fails instead of hanging: use
+  `--noconfirm` / `set -e` in `.chezmoiscripts`. Apply is capped at 60m (`APPLY_TIMEOUT`).
+- `test/` is in `.chezmoiignore`, otherwise it would be deployed to `~/test`.
+- Scripts in `.chezmoiscripts` run alphabetically per phase (before/after): `00-install-yay` must
+  sort before `install-packages`.
+- `test/out/packages-not-in-dotfiles.txt` lists packages on this machine a reinstall would miss.
+- A package a config calls (waybar click, Hyprland bind, script) must be in the install-packages
+  lists, and a daemon it needs must be in `run_onchange_after_enable-services.sh.tmpl` (a fresh
+  install leaves services off). AUR-only packages (e.g. blueberry) go in the yay step.

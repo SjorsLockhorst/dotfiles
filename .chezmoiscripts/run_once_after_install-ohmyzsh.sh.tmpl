@@ -5,9 +5,15 @@ echo 'Running installation script for ZSH'
 
 # Make sure that user wants zsh and is not on Windows
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
-	export RUNZSH=${RUNZSH:-no}
+	# KEEP_ZSHRC: the installer would replace the chezmoi-managed .zshrc
+	export RUNZSH=no KEEP_ZSHRC=yes CHSH=no
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
+fi
+
+# Login shell (the installer's chsh would ask for a password)
+if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v zsh)" ]; then
+	sudo chsh -s "$(command -v zsh)" "$(id -un)"
 fi
 
 if [ ! -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting ]; then

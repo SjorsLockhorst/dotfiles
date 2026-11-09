@@ -58,6 +58,7 @@
 	"ttf-fantasque-nerd"
 	"ttf-firacode-nerd"
 	"which"
+	"btop"
 -}}
 
 {{ $packagesAUR := list
@@ -65,6 +66,14 @@
 	"catppuccin-cursors-mocha"
 	"yaru-icon-theme"
 	"waybar-module-pacman-updates-git"
+-}}
+
+{{ $nvimAUR := list
+	"opencode-bin"
+-}}
+
+{{ $hyprlandAUR := list
+	"blueberry"
 -}}
 
 {{ $hyprland := list
@@ -96,11 +105,33 @@
 	"qt6-svg"
 	"qt6-declarative"
 	"qt5-quickcontrols2"
+	"pipewire-pulse"
+	"pipewire-alsa"
+	"pipewire-jack"
+	"playerctl"
+	"libnotify"
+	"networkmanager"
+	"bluez"
+	"bluez-utils"
+	"brightnessctl"
+	"power-profiles-daemon"
+	"docker"
+	"docker-compose"
+	"lazydocker"
+	"tailscale"
+	"proton-vpn-gtk-app"
 -}}
 
 {{ $gui_packages := list
 	"brave-browser"
 	"kitty"
+-}}
+
+{{ $nvimArch := list
+	"neovim"
+	"tree-sitter-cli"
+	"gcc"
+	"lazygit"
 -}}
 
 {{ $zsh := list
@@ -174,12 +205,16 @@ sudo apt-get install -y {{ $backup | join " " }}
 
 {{ if (eq .chezmoi.osRelease.id "arch") -}}
 #!/bin/bash
+set -euo pipefail
 
 sudo pacman -S --noconfirm --needed {{ $packagesArch | join " " }}
-yay -S --noconfirm --needed {{ $packagesAUR | join " " }}
 
 {{ if .backup -}}
 sudo pacman -S --noconfirm --needed {{ $backup | join " " }}
+{{ end -}}
+
+{{ if .nvim -}}
+sudo pacman -S --noconfirm --needed {{ $nvimArch | join " " }}
 {{ end -}}
 
 {{ if .zsh -}}
@@ -189,5 +224,13 @@ sudo pacman -S --noconfirm --needed {{ $zsh | join " " }}
 {{ if .hyprland -}}
 sudo pacman -S --noconfirm --needed {{ $hyprland | join " " }}
 {{ end -}}
+
+# Last and not fatal: AUR sources live on third-party hosts that can be down,
+# which should not stop the rest of the dotfiles from being applied.
+{{ $aur := $packagesAUR -}}
+{{ if .nvim }}{{ $aur = concat $aur $nvimAUR }}{{ end -}}
+{{ if .hyprland }}{{ $aur = concat $aur $hyprlandAUR }}{{ end -}}
+yay -S --noconfirm --needed {{ $aur | join " " }} \
+    || echo "WARNING: installing AUR packages failed, rerun: yay -S {{ $aur | join " " }}" >&2
 
 {{ end -}}

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Install/update the vim-plug plugins from .vimrc (without them vim errors on
+# start, e.g. the gruvbox colorscheme is missing). Reruns when .vimrc changes:
+# vimrc {{ include "dot_vimrc.tmpl" | sha256sum }}
+
+# -es hides the UI; the exit status reflects .vimrc errors from before the
+# plugins existed, so it is ignored. The bats test checks vim afterwards.
+vim -es -u "$HOME/.vimrc" -i NONE -c 'PlugInstall --sync' -c 'qa' || true

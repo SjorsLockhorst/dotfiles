@@ -1,0 +1,14 @@
+{{ if (eq .chezmoi.osRelease.id "arch") -}}
+#!/bin/bash
+# 00- so it sorts before install-packages, which uses yay for AUR packages
+set -euo pipefail
+
+command -v yay >/dev/null && exit 0
+
+sudo pacman -S --noconfirm --needed git base-devel
+build=$(mktemp -d)
+trap 'rm -rf "$build"' EXIT
+git clone https://aur.archlinux.org/yay.git "$build/yay"
+cd "$build/yay"
+makepkg -si --noconfirm
+{{ end -}}
