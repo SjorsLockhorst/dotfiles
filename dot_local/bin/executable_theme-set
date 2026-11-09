@@ -41,20 +41,25 @@ untrusted=()
 mkdir -p "$STATE"
 gen="$STATE/gen-$(date +%s%N)"
 "$(dirname "$0")/theme-render" "$src" "$gen" "${untrusted[@]}"
-# Wallpapers: your own for this theme if you have them, otherwise the theme's.
+# Wallpapers: the theme's own, plus yours: the ones directly in
+# ~/.config/theme/backgrounds (for every theme) and those in its <theme>/
+# subfolder. Yours win on a name clash and are the default if there's no saved pick.
 # theme-bg-next cycles through them and remembers the choice per theme.
-bg_dir="$HOME/.config/theme/backgrounds/$name"
-[[ -d $bg_dir ]] || bg_dir="$src/backgrounds"
-if [[ -d $bg_dir ]]; then
-    ln -s "$bg_dir" "$gen/backgrounds"
-    saved=$(cat "$STATE/backgrounds/$name" 2>/dev/null || true)
-    if [[ -n $saved && -f "$bg_dir/$saved" ]]; then
-        bg="$bg_dir/$saved"
-    else
-        bg=$(find -L "$bg_dir" -maxdepth 1 -type f -iregex '.*\.\(jpe?g\|png\|webp\)' | sort | head -1)
-    fi
-    if [[ -n $bg ]]; then ln -s "$bg" "$gen/background"; fi
+own=("$HOME/.config/theme/backgrounds" "$HOME/.config/theme/backgrounds/$name")
+images() { [[ -d $1 ]] && find -L "$1" -maxdepth 1 -type f -iregex '.*\.\(jpe?g\|png\|webp\)' | sort; }
+mkdir "$gen/backgrounds"
+for dir in "$src/backgrounds" "${own[@]}"; do
+    while IFS= read -r f; do
+        ln -sfn "$f" "$gen/backgrounds/$(basename "$f")"
+    done < <(images "$dir" || true)
+done
+saved=$(cat "$STATE/backgrounds/$name" 2>/dev/null || true)
+if [[ -n $saved && -e "$gen/backgrounds/$saved" ]]; then
+    bg="$gen/backgrounds/$saved"
+else
+    bg=$( { images "${own[1]}"; images "${own[0]}"; images "$gen/backgrounds"; } 2>/dev/null | head -1 || true)
 fi
+if [[ -n $bg ]]; then ln -s "$(readlink -f "$bg")" "$gen/background"; fi
 ln -sfn "$gen" "$STATE/current.new"
 mv -T "$STATE/current.new" "$CURRENT"
 echo "$name" >"$STATE/name"

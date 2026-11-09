@@ -71,5 +71,6 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   reloads apps. App configs only point at `current/` files, so never hardcode colours in them.
 - Changing a template only takes effect after `chezmoi apply` (the run_onchange theme-refresh
   script re-renders) or `theme-set --refresh`.
-- Own wallpapers per theme: `dot_config/theme/backgrounds/<theme>/` (overrides the theme's).
+- Own wallpapers: files directly in `dot_config/theme/backgrounds/` go in every theme, those in
+  `backgrounds/<theme>/` only in that one. Both are added to the theme's own (yours win on a name clash).
 - rofi variable names can't contain `_` (the whole .rasi silently fails to parse).
