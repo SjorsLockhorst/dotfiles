@@ -73,4 +73,18 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   script re-renders) or `theme-set --refresh`.
 - Own wallpapers: files directly in `dot_config/theme/backgrounds/` go in every theme, those in
   `backgrounds/<theme>/` only in that one. Both are added to the theme's own (yours win on a name clash).
+- Obsidian: `theme-set` copies `current/obsidian.css` into every vault (from
+  `~/.config/obsidian/obsidian.json`) as the "Omarchy" theme (`.obsidian/themes/Omarchy/`), like
+  omarchy does. Pick it once per vault in Obsidian; vault config is not chezmoi-managed.
 - rofi variable names can't contain `_` (the whole .rasi silently fails to parse).
+
+## Waybar
+- Two bars in `dot_config/waybar/config` (compact on `eDP-1`, full on `!eDP-1`); module
+  definitions are shared in `modules.json` (via `include`). Variants use `module#name`.
+- Font family must be `FantasqueSansM Nerd Font Propo` (a wrong name silently falls back to
+  DejaVu and random icon fonts). Use only Material Design icons (U+F0000 range) for even sizes.
+- A `group/foo` is styled as `#foo` in CSS (not `#group-foo`).
+- mpris `dynamic-len` drops fields that don't fit instead of truncating; use `title-len`/`artist-len`.
+- waybar 0.15 custom modules: `{}` in a format next to `{icon}` errors; use `{text}`.
+- Reload: `pkill -USR2 -x waybar` (styles/config). Restart detached: `setsid -f waybar`.
+  Screenshot to check: `grim -o eDP-1 out.png`.

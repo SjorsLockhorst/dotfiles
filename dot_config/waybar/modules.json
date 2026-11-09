@@ -1,0 +1,449 @@
+// -*- mode: jsonc -*-
+// Module definitions shared by both bars in ./config.
+// Icons are all Nerd Font Material Design (U+F0000 range) so they share one size.
+{
+    "hyprland/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": true,
+        "format": "{id} {windows}",
+        "format-window-separator": " ",
+        "window-rewrite-default": "󰖯",
+        "window-rewrite": {
+            "class<zen|firefox>": "󰈹",
+            "class<chromium|google-chrome>": "󰊯",
+            "class<kitty>": "󰆍",
+            "class<slack|Slack>": "󰒱",
+            "class<md.obsidian.Obsidian>": "󰠮",
+            "class<feishin|Feishin>": "󰝚",
+            "class<spotify|Spotify>": "󰓇",
+            "class<discord|vesktop>": "󰙯",
+            "class<code|Code|code-oss>": "󰨞",
+            "class<org.pulseaudio.pavucontrol>": "󰕾",
+            "class<blueberry.py>": "󰂯"
+        }
+    },
+    "custom/pomodoro": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "waybar-module-pomodoro --no-work-icons -p 󰐊 -a 󰏤",
+        "on-click": "waybar-module-pomodoro toggle",
+        "on-click-right": "waybar-module-pomodoro reset"
+    },
+    "cpu": {
+        "format": "󰍛 {usage}%",
+        "interval": 3,
+        "states": {
+            "warning": 70,
+            "critical": 90
+        },
+        "on-click": "kitty -e btop"
+    },
+    "memory": {
+        "format": "󰘚 {percentage}%",
+        "states": {
+            "warning": 75,
+            "critical": 90
+        },
+        "tooltip-format": "{used:0.1f} / {total:0.1f} GiB used",
+        "on-click": "kitty -e btop"
+    },
+    "temperature": {
+        "critical-threshold": 80,
+        "format": "󰔏 {temperatureC}°C"
+    },
+    "idle_inhibitor": {
+        "format": "{icon}",
+        "format-icons": {
+            "activated": "󰅶",
+            "deactivated": "󰾪"
+        },
+        "tooltip-format-activated": "Staying awake",
+        "tooltip-format-deactivated": "Idle allowed"
+    },
+    "power-profiles-daemon": {
+        "format": "{icon}",
+        "tooltip-format": "Power profile: {profile}\nDriver: {driver}",
+        "format-icons": {
+            "default": "󰗑",
+            "performance": "󱐋",
+            "balanced": "󰗑",
+            "power-saver": "󰌪"
+        }
+    },
+    "wireplumber": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟 {volume}%",
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "scroll-step": 5,
+        "format-icons": [
+            "󰕿",
+            "󰖀",
+            "󰕾"
+        ]
+    },
+    "backlight": {
+        "format": "{icon} {percent}%",
+        "format-icons": [
+            "󰃞",
+            "󰃟",
+            "󰃠"
+        ]
+    },
+    "battery": {
+        "bat": "BAT1",
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󰚥 {capacity}%",
+        "format-alt": "{icon} {time}",
+        "format-icons": [
+            "󰁺",
+            "󰁼",
+            "󰁾",
+            "󰂀",
+            "󰁹"
+        ]
+    },
+    "tray": {
+        "icon-size": 17,
+        "spacing": 10
+    },
+    "bluetooth": {
+        "format": "󰂯",
+        "format-disabled": "",
+        "format-off": "󰂲",
+        "format-connected": "󰂱 {num_connections}",
+        "tooltip-format": "{controller_alias}\t{controller_address}",
+        "tooltip-format-connected": "{controller_alias}\t{controller_address}\n\n{device_enumerate}",
+        "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+        "on-click": "blueberry"
+    },
+    "custom/updates": {
+        "format": "{icon} {text}",
+        "return-type": "json",
+        "format-icons": {
+            "has-updates": "󰏗",
+            "updated": "󰄬"
+        },
+        "exec-if": "which waybar-module-pacman-updates",
+        "exec": "waybar-module-pacman-updates --interval-seconds 5 --network-interval-seconds 300"
+    },
+    "custom/notification": {
+        "format": "{icon}",
+        "return-type": "json",
+        "format-icons": {
+            "notification": "󰂚",
+            "none": "󰂜",
+            "dnd-notification": "󰂛",
+            "dnd-none": "󰂛",
+            "inhibited-notification": "󰂚",
+            "inhibited-none": "󰂜",
+            "dnd-inhibited-notification": "󰂛",
+            "dnd-inhibited-none": "󰂛"
+        },
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "swaync-client -t -sw",
+        "on-click-right": "swaync-client -d -sw",
+        "escape": true
+    },
+    "custom/power": {
+        "format": "󰐥",
+        "tooltip": false,
+        "menu": "on-click",
+        "menu-file": "$HOME/.config/waybar/power_menu.xml",
+        "menu-actions": {
+            "shutdown": "shutdown now",
+            "reboot": "reboot",
+            "suspend": "systemctl suspend",
+            "hibernate": "systemctl hibernate",
+            "logout": "hyprctl dispatch exit"
+        }
+    },
+    "clock#full": {
+        "timezone": "Europe/Amsterdam",
+        "format": "󰥔 {:%A %d %B  %H:%M}",
+        "tooltip-format": "<big>{:%A %d %B %Y}</big>\n<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "weeks-pos": "left",
+            "on-scroll": 1,
+            "format": {
+                "weeks": "<span alpha='60%'>W{}</span>",
+                "today": "<b><u>{}</u></b>"
+            }
+        },
+        "actions": {
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down",
+            "on-click-right": "shift_reset"
+        }
+    },
+    "clock#compact": {
+        "timezone": "Europe/Amsterdam",
+        "format": "󰥔 {:%a %d  %H:%M}",
+        "tooltip-format": "<big>{:%A %d %B %Y}</big>\n<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "weeks-pos": "left",
+            "on-scroll": 1,
+            "format": {
+                "weeks": "<span alpha='60%'>W{}</span>",
+                "today": "<b><u>{}</u></b>"
+            }
+        },
+        "actions": {
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down",
+            "on-click-right": "shift_reset"
+        }
+    },
+    "mpris#compact": {
+        "format": "{player_icon} {dynamic}",
+        "dynamic-order": [
+            "title"
+        ],
+        "dynamic-len": 30,
+        "player-icons": {
+            "default": "󰝚",
+            "spotify": "󰓇",
+            "firefox": "󰈹",
+            "zen": "󰈹"
+        },
+        "status-icons": {
+            "paused": "󰏤"
+        },
+        "tooltip-format": "{player}: {artist} – {title}\n{album}\n\nClick: play/pause, right: next, middle: previous, scroll: volume",
+        "format-paused": "{status_icon} {dynamic}",
+        "on-scroll-up": "playerctl volume 0.05+",
+        "on-scroll-down": "playerctl volume 0.05-",
+        "title-len": 22
+    },
+    "mpris#full": {
+        "format": "{player_icon} {dynamic}",
+        "dynamic-order": [
+            "artist",
+            "title"
+        ],
+        "dynamic-len": 60,
+        "player-icons": {
+            "default": "󰝚",
+            "spotify": "󰓇",
+            "firefox": "󰈹",
+            "zen": "󰈹"
+        },
+        "status-icons": {
+            "paused": "󰏤"
+        },
+        "tooltip-format": "{player}: {artist} – {title}\n{album}\n\nClick: play/pause, right: next, middle: previous, scroll: volume",
+        "format-paused": "{status_icon} {dynamic}",
+        "dynamic-separator": " – ",
+        "on-scroll-up": "playerctl volume 0.05+",
+        "on-scroll-down": "playerctl volume 0.05-",
+        "title-len": 35,
+        "artist-len": 20
+    },
+    "custom/media-prev": {
+        "format": "󰒮",
+        "exec": "playerctl status >/dev/null 2>&1 && echo ok",
+        "interval": 2,
+        "on-click": "playerctl previous",
+        "tooltip": false
+    },
+    "custom/media-next": {
+        "format": "󰒭",
+        "exec": "playerctl status >/dev/null 2>&1 && echo ok",
+        "interval": 2,
+        "on-click": "playerctl next",
+        "tooltip": false
+    },
+    "custom/weather": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.local/bin/waybar-weather",
+        "interval": 600,
+        "on-click": "xdg-open https://wttr.in"
+    },
+    "custom/weather#full": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.local/bin/waybar-weather --full",
+        "interval": 600,
+        "on-click": "xdg-open https://wttr.in"
+    },
+    "custom/docker": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.local/bin/waybar-docker",
+        "interval": 10,
+        "on-click": "kitty -e lazydocker"
+    },
+    "custom/docker#full": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.local/bin/waybar-docker --full",
+        "interval": 10,
+        "on-click": "kitty -e lazydocker"
+    },
+    "custom/vpn": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.local/bin/waybar-vpn",
+        "interval": 10,
+        "on-click": "$HOME/.local/bin/vpn-menu",
+        "signal": 8
+    },
+    "custom/vpn#full": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.local/bin/waybar-vpn --full",
+        "interval": 10,
+        "on-click": "$HOME/.local/bin/vpn-menu",
+        "signal": 8
+    },
+    "network": {
+        "interval": 5,
+        "format-icons": [
+            "󰤯",
+            "󰤟",
+            "󰤢",
+            "󰤥",
+            "󰤨"
+        ],
+        "format-wifi": "{icon}",
+        "format-ethernet": "󰈀",
+        "format-linked": "󰈀",
+        "format-disconnected": "󰤮",
+        "format-disabled": "󰤮",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
+        "tooltip-format-ethernet": "{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
+        "tooltip-format-disconnected": "Disconnected",
+        "on-click": "$HOME/.local/bin/wifi-menu",
+        "on-click-right": "nm-connection-editor"
+    },
+    "network#full": {
+        "interval": 5,
+        "format-icons": [
+            "󰤯",
+            "󰤟",
+            "󰤢",
+            "󰤥",
+            "󰤨"
+        ],
+        "format-wifi": "{icon} {essid}",
+        "format-ethernet": "󰈀 {ifname}",
+        "format-linked": "󰈀",
+        "format-disconnected": "󰤮",
+        "format-disabled": "󰤮",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
+        "tooltip-format-ethernet": "{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
+        "tooltip-format-disconnected": "Disconnected",
+        "on-click": "$HOME/.local/bin/wifi-menu",
+        "on-click-right": "nm-connection-editor"
+    },
+    "cpu#leader": {
+        "format": "󰅁 󰍛",
+        "interval": 3,
+        "states": {
+            "warning": 70,
+            "critical": 90
+        },
+        "tooltip": false,
+        "on-click": "kitty -e btop"
+    },
+    "group/time-compact": {
+        "orientation": "inherit",
+        "modules": [
+            "clock#compact",
+            "custom/weather",
+            "custom/pomodoro"
+        ]
+    },
+    "group/time-full": {
+        "orientation": "inherit",
+        "modules": [
+            "clock#full",
+            "custom/weather#full",
+            "custom/pomodoro"
+        ]
+    },
+    "group/status": {
+        "orientation": "inherit",
+        "drawer": {
+            "transition-duration": 250,
+            "transition-left-to-right": false,
+            "children-class": "drawer-child"
+        },
+        "modules": [
+            "cpu#leader",
+            "cpu",
+            "memory",
+            "temperature",
+            "custom/docker"
+        ]
+    },
+    "group/hardware": {
+        "orientation": "inherit",
+        "modules": [
+            "cpu",
+            "memory",
+            "temperature",
+            "custom/docker#full"
+        ]
+    },
+    "group/media": {
+        "orientation": "inherit",
+        "modules": [
+            "custom/media-prev",
+            "mpris#full",
+            "custom/media-next"
+        ]
+    },
+    "group/controls": {
+        "orientation": "inherit",
+        "modules": [
+            "idle_inhibitor",
+            "power-profiles-daemon",
+            "wireplumber",
+            "backlight",
+            "battery"
+        ]
+    },
+    "group/system-compact": {
+        "orientation": "inherit",
+        "modules": [
+            "tray",
+            "network",
+            "custom/vpn",
+            "bluetooth",
+            "custom/updates",
+            "custom/notification",
+            "custom/power"
+        ]
+    },
+    "group/system-full": {
+        "orientation": "inherit",
+        "modules": [
+            "tray",
+            "network#full",
+            "custom/vpn#full",
+            "bluetooth",
+            "custom/updates",
+            "custom/notification",
+            "custom/power"
+        ]
+    },
+    "hyprland/window": {
+        "format": "{}",
+        "max-length": 60,
+        "separate-outputs": true,
+        "rewrite": {
+            "(.*) — Zen Browser": "$1",
+            "(.*) - Obsidian.*": "$1"
+        }
+    }
+}

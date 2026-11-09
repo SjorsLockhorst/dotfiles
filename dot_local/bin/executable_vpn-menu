@@ -1,0 +1,30 @@
+#!/bin/bash
+# Rofi VPN menu: Tailscale devices (pick one to copy its address), connect/disconnect, ProtonVPN
+
+set -uo pipefail
+
+lines=()
+ts=$(tailscale status --json 2>/dev/null || true)
+if [[ $(jq -r '.BackendState // empty' <<<"$ts") == Running ]]; then
+    mapfile -t peers < <(jq -r '.Peer[]? | "\(if .Online then "●" else "○" end) \(.HostName)\t\(.DNSName | rtrimstr("."))"' <<<"$ts")
+    for p in "${peers[@]}"; do lines+=("${p%%$'\t'*}   (copy address)"); done
+    lines+=("󰌗  Disconnect Tailscale")
+else
+    lines+=("󰌗  Connect Tailscale")
+fi
+lines+=("󰦝  Open ProtonVPN")
+
+choice=$(printf '%s\n' "${lines[@]}" | rofi -dmenu -i -p "VPN") || exit 0
+case $choice in
+    *"Disconnect Tailscale") pkexec tailscale down && notify-send "Tailscale" "Disconnected" ;;
+    *"Connect Tailscale") pkexec tailscale up && notify-send "Tailscale" "Connected" ;;
+    *"Open ProtonVPN") protonvpn-app & ;;
+    *"(copy address)")
+        host=${choice#? }; host=${host%"   (copy address)"}
+        for p in "${peers[@]}"; do
+            [[ ${p%%$'\t'*} == *" $host" ]] || continue
+            addr=${p#*$'\t'}
+            wl-copy "$addr" && notify-send "Tailscale" "Copied $addr"
+        done ;;
+esac
+pkill -RTMIN+8 -x waybar  # refresh the module right away

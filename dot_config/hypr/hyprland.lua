@@ -50,7 +50,7 @@ local menu        = "rofi -show drun"
 
 -- See https://wiki.hypr.land/Configuring/Basics/Autostart/
 hl.on("hyprland.start", function()
-    hl.exec_cmd("waybar & swaync & hypridle & hyprpaper & nm-applet --indicator")
+    hl.exec_cmd("waybar & swaync & hypridle & hyprpaper")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
@@ -231,6 +231,7 @@ hl.bind("SUPER + L",         hl.dsp.exec_cmd("hyprlock"))
 hl.bind("SUPER + CTRL + SHIFT + SPACE", hl.dsp.exec_cmd("$HOME/.local/bin/theme-menu"))
 hl.bind("SUPER + CTRL + SPACE",         hl.dsp.exec_cmd("$HOME/.local/bin/theme-bg-next"))
 hl.bind(mainMod .. " + B",   hl.dsp.exec_cmd("gtk-launch $(xdg-settings get default-web-browser)"))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("pkill -SIGUSR1 -x waybar"))  -- show/hide the bar
 
 -- TODO: Make this more modular so we can spinn up also other shells easily
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd([[kitty $SHELL -i -c "start-core-ai; exec $SHELL"]], { workspace = "1" }))

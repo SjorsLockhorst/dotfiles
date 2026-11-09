@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Waybar weather module (wttr.in), cached so several bars share one fetch.
+
+Usage: waybar-weather [--full]
+Location: $WAYBAR_WEATHER_LOCATION (city name), else wttr.in guesses from your IP.
+"""
+import json, os, sys, time, urllib.parse, urllib.request
+from datetime import datetime
+
+CACHE = os.path.expanduser("~/.cache/waybar-weather.json")
+MAX_AGE = 600  # seconds
+LOCATION = os.environ.get("WAYBAR_WEATHER_LOCATION", "")
+
+# wttr.in (WWO) weather codes -> Nerd Font Material Design icons
+ICONS = [
+    ({113}, "\U000f0599"),  # sunny (moon at night, see below)
+    ({116}, "\U000f0595"),  # partly cloudy
+    ({119, 122}, "\U000f0590"),  # cloudy
+    ({143, 248, 260}, "\U000f0591"),  # fog
+    ({176, 263, 266, 293, 296, 299, 302, 353}, "\U000f0597"),  # rain
+    ({305, 308, 356, 359}, "\U000f0596"),  # pouring
+    ({179, 182, 185, 281, 284, 311, 314, 317, 350, 362, 365, 374, 377}, "\U000f067f"),  # sleet
+    ({227, 230, 323, 326, 329, 332, 335, 338, 368, 371, 392, 395}, "\U000f0598"),  # snow
+    ({200, 386, 389}, "\U000f0593"),  # thunder
+]
+NIGHT = {113: "\U000f0594", 116: "\U000f0f31"}
+
+
+def fetch():
+    try:
+        if time.time() - os.path.getmtime(CACHE) < MAX_AGE:
+            with open(CACHE) as f:
+                return json.load(f)
+    except (OSError, ValueError):
+        pass
+    url = "https://wttr.in/%s?format=j1" % urllib.parse.quote(LOCATION)
+    with urllib.request.urlopen(url, timeout=10) as r:
+        data = json.load(r)
+    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+    with open(CACHE + ".tmp", "w") as f:
+        json.dump(data, f)
+    os.replace(CACHE + ".tmp", CACHE)
+    return data
+
+
+def is_night(astro):
+    now = datetime.now().time()
+    rise = datetime.strptime(astro["sunrise"], "%I:%M %p").time()
+    sset = datetime.strptime(astro["sunset"], "%I:%M %p").time()
+    return not (rise <= now < sset)
+
+
+def main():
+    full = "--full" in sys.argv
+    try:
+        data = fetch()
+    except Exception as e:
+        print(json.dumps({"text": "", "tooltip": f"Weather unavailable: {e}", "class": "error"}))
+        return
+    cur = data["current_condition"][0]
+    code = int(cur["weatherCode"])
+    icon = next((i for codes, i in ICONS if code in codes), "\U000f0590")
+    if is_night(data["weather"][0]["astronomy"][0]):
+        icon = NIGHT.get(code, icon)
+    desc = cur["weatherDesc"][0]["value"].strip()
+    text = f"{icon} {cur['temp_C']}°"
+    if full:
+        text += f" {desc}"
+
+    area = data["nearest_area"][0]["areaName"][0]["value"]
+    lines = [f"<b>{area}</b>: {desc}, {cur['temp_C']}°C (feels {cur['FeelsLikeC']}°C)",
+             f"Humidity {cur['humidity']}%, wind {cur['windspeedKmph']} km/h", ""]
+    for day in data["weather"]:
+        name = datetime.strptime(day["date"], "%Y-%m-%d").strftime("%a %d")
+        rain = max(int(h.get("chanceofrain", 0)) for h in day["hourly"])
+        lines.append(f"<tt>{name}  {day['mintempC']:>3}° – {day['maxtempC']:>3}°   rain {rain:>3}%</tt>")
+    print(json.dumps({"text": text, "tooltip": "\n".join(lines), "class": "night" if icon in NIGHT.values() else "day"}))
+
+
+main()

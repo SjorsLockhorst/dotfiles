@@ -1,137 +1,133 @@
-/* Colours come from the active theme (theme-set swaps this file and reloads waybar) */
+/* Colours come from the active theme (theme-set swaps this file and reloads waybar).
+   Palette use: foreground for everything, accent for highlights, red/yellow/green
+   only for states (critical / warning / charging). */
 @import "../../.local/state/theme/current/waybar.css";
 
 * {
-  font-family: FantasqueSansMono Nerd Font;
-  font-size: 17px;
+  font-family: "FantasqueSansM Nerd Font Propo";
+  font-size: 15px;
   min-height: 0;
+  border: none;
 }
 
-#waybar {
+window#waybar {
   background: transparent;
   color: @foreground;
-  margin: 5px 5px;
 }
 
-#workspaces {
-  border-radius: 1rem 1rem 1rem 1rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  margin: 5px;
-  background-color: @lighter_background;
-  margin-left: 1rem;
+tooltip {
+  background: @background;
+  border: 1px solid alpha(@accent, 0.4);
+  border-radius: 10px;
 }
+tooltip label { color: @foreground; }
 
-#workspaces button {
-  color: @accent;
-  border-radius: 1rem;
-  padding: 0.4rem;
+/* Pills: every top-level block is the same rounded card */
+#workspaces,
+#mpris.compact,
+#window,
+#media,
+#time-compact,
+#time-full,
+#status,
+#hardware,
+#controls,
+#system-compact,
+#system-full {
+  background: alpha(@background, 0.92);
+  border: 1px solid alpha(@accent, 0.2);
+  border-radius: 12px;
+  margin: 6px 3px 0 3px;
+  padding: 0 4px;
 }
+.modules-left > widget:first-child > #workspaces { margin-left: 10px; }
+.modules-right > widget:last-child > #system-compact,
+.modules-right > widget:last-child > #system-full { margin-right: 10px; }
 
-#workspaces button.active {
-  color: @cyan;
-  border-radius: 1rem;
-}
-
-#workspaces button:hover {
-  color: @bright_blue;
-  border-radius: 1rem;
-}
-
-
-#cpu,
-#bluetooth,
-#network,
-#temperature,
-#power-profiles-daemon,
-#idle_inhibitor,
-#mpd,
-#memory,
-#custom-music,
-#tray,
-#backlight,
-#clock,
-#battery,
-#wireplumber,
-#custom-lock,
-#custom-updates,
-#custom-pomodoro,
-#custom-power
-{
-  background-color: @lighter_background;
-  padding: 0.5rem 1rem;
-  margin: 5px 0;
-}
-
-#{
-  background-color: @lighter_background;
-  padding: 0.5rem 1rem;
-  margin: 5px 0;
-}
-
-
-#clock {
-  color: @blue;
-}
-
-/* #battery { */
-/*   color: @green; */
-/* } */
-
-#cpu {
-  color: @green;
-}
-
-#battery.charging {
-  color: @green;
-}
-
-#battery.good:not(.charging) {
+/* Modules inside the pills: same padding, same colour */
+#clock, #custom-pomodoro, #cpu, #memory, #temperature, #idle_inhibitor,
+#power-profiles-daemon, #wireplumber, #backlight, #battery, #tray, #bluetooth,
+#custom-updates, #custom-notification, #custom-power, #mpris, #window,
+#custom-weather, #custom-docker, #custom-vpn, #network,
+#custom-media-prev, #custom-media-next {
   color: @foreground;
+  padding: 0 8px;
+  margin: 4px 0;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+#mpris.compact, #window { margin: 6px 3px 0 3px; padding: 0 12px; }
+window#waybar.empty #window { background: transparent; border-color: transparent; }
+#clock:hover, #custom-pomodoro:hover, #cpu:hover, #memory:hover, #temperature:hover,
+#idle_inhibitor:hover, #power-profiles-daemon:hover, #wireplumber:hover, #backlight:hover,
+#battery:hover, #bluetooth:hover, #custom-updates:hover, #custom-notification:hover,
+#custom-power:hover, #mpris:hover, #custom-weather:hover, #custom-docker:hover,
+#custom-vpn:hover, #network:hover, #custom-media-prev:hover, #custom-media-next:hover {
+  background: alpha(@accent, 0.15);
 }
 
-#battery.warning:not(.charging) {
-  color: @yellow;
+/* Workspaces: number + app icons; the active one is a filled accent pill */
+#workspaces { padding: 0 3px; }
+#workspaces button {
+  color: alpha(@foreground, 0.7);
+  background: transparent;
+  padding: 0 10px;
+  margin: 4px 1px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+#workspaces button:hover {
+  color: @foreground;
+  background: alpha(@accent, 0.15);
+  box-shadow: none;
+}
+#workspaces button.active {
+  color: @background;
+  background: @accent;
+}
+#workspaces button.urgent {
+  color: @background;
+  background: @red;
 }
 
+/* Accent: the things you look at most */
+#clock { color: @accent; font-weight: bold; }
+#custom-power { color: @accent; padding-right: 10px; }
+
+/* Dimmed: off / idle / paused */
+#mpris.paused,
+#idle_inhibitor.deactivated,
+#bluetooth.off,
+#custom-updates.updated,
+#custom-notification.none,
+#custom-notification.dnd-none,
+#wireplumber.muted {
+  color: alpha(@foreground, 0.5);
+}
+#idle_inhibitor.activated { color: @accent; }
+#custom-notification.notification { color: @accent; }
+#custom-vpn.off,
+#network.disconnected, #network.disabled { color: alpha(@foreground, 0.5); }
+#custom-media-prev, #custom-media-next { padding: 0 6px; }
+
+/* Laptop status drawer: the leader chevron+chip hints that it opens */
+#cpu.leader { color: alpha(@foreground, 0.75); }
+#cpu.leader.warning { color: @yellow; }
+#cpu.leader.critical { color: @red; }
+
+/* States */
+#cpu.warning, #memory.warning,
+#battery.warning:not(.charging),
+#custom-updates.has-updates { color: @yellow; }
+#battery.charging, #battery.plugged { color: @green; }
+#cpu.critical, #memory.critical, #temperature.critical,
 #battery.critical:not(.charging) {
   color: @red;
+  animation: blink 1s ease-in-out infinite alternate;
 }
 
-#backlight {
-  color: @yellow;
-}
+#tray > .needs-attention { background: alpha(@red, 0.3); }
 
-#backlight, #battery {
-    border-radius: 0;
+@keyframes blink {
+  to { color: @background; background: @red; }
 }
-
-#bluetooth {
-  color: @blue;
-}
-
-#custom-music {
-  color: @magenta;
-  border-radius: 1rem;
-}
-
-#custom-lock {
-    border-radius: 1rem 0px 0px 1rem;
-    color: @accent;
-}
-
-#custom-power {
-    margin-right: 1rem;
-    border-radius: 0px 1rem 1rem 0px;
-    color: @red;
-}
-#custom-pomodoro {
-    color: @red;
-}
-
-#idle_inhibitor {
-    margin-left: 1rem;
-    border-radius: 1rem 0 0 1rem;
-}
-
-

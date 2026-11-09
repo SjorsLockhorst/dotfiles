@@ -1,0 +1,39 @@
+#!/bin/bash
+# Waybar: Tailscale and ProtonVPN (or any NetworkManager VPN) status.
+# Tailscale shows dimmed when it's down, so the click menu (vpn-menu) can reconnect it.
+# Usage: waybar-vpn [--full]   --full adds labels ("Tailscale", the VPN name)
+full=${1:-}
+parts=() tips=() classes=()
+
+if command -v tailscale >/dev/null; then
+    ts=$(tailscale status --json 2>/dev/null)
+    if [[ $(jq -r '.BackendState // empty' <<<"$ts") == Running ]]; then
+        online=$(jq '[.Peer[]? | select(.Online)] | length' <<<"$ts")
+        total=$(jq '[.Peer[]?] | length' <<<"$ts")
+        tips+=("Tailscale: connected ($(jq -r '.Self.TailscaleIPs[0]' <<<"$ts")), $online of $total devices online")
+        tips+=("$(jq -r '.Peer[]? | "  \(if .Online then "●" else "○" end) \(.HostName)"' <<<"$ts")")
+        classes+=(tailscale)
+        p="󰌗"
+    else
+        tips+=("Tailscale: disconnected")
+        classes+=(tailscale-off)
+        p="󰌗"
+    fi
+    [[ $full == --full ]] && p="$p Tailscale"
+    parts+=("$p")
+fi
+
+vpn=$(nmcli -t -f NAME,TYPE con show --active 2>/dev/null | awk -F: '$2 ~ /^(vpn|wireguard)$/ {print $1}' | head -1)
+if [[ -n $vpn ]]; then
+    p="󰦝"
+    [[ $full == --full ]] && p="󰦝 $vpn"
+    parts+=("$p")
+    tips+=("VPN: $vpn")
+    classes+=(vpn)
+fi
+
+tips+=("" "Click for the VPN menu")
+# Dimmed whole module when Tailscale is the only thing and it's down
+[[ ${classes[*]} == tailscale-off ]] && classes+=(off)
+jq -cn --arg t "${parts[*]}" --arg tip "$(printf '%s\n' "${tips[@]}")" --arg c "${classes[*]}" \
+    '{text: $t, tooltip: ($tip | rtrimstr("\n")), class: ($c | split(" "))}'

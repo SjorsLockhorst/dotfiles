@@ -93,11 +93,40 @@ if [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] && command -v gsettings >/dev/null; th
         icons=Papirus-Dark
     fi
     wanted=$(tr -d '[:space:]' <"$CURRENT/icons.theme" 2>/dev/null || true)
+    # Yaru-<colour> draws its panel/tray icons dark; the -dark variant has light ones
+    if [[ $mode == dark && -n $wanted && $wanted != *-dark &&
+          ( -d /usr/share/icons/$wanted-dark || -d $HOME/.local/share/icons/$wanted-dark ) ]]; then
+        wanted=$wanted-dark
+    fi
     if [[ -n $wanted && ( -d /usr/share/icons/$wanted || -d $HOME/.local/share/icons/$wanted ) ]]; then
         icons=$wanted
     fi
     gsettings set org.gnome.desktop.interface icon-theme "$icons"
 fi
+
+# Obsidian: install the colours as a theme ("Omarchy", as omarchy does) in every
+# vault. Rewriting theme.css makes Obsidian reload it live. Pick it once per vault
+# under Appearance > Themes.
+obsidian_vaults() {
+    python3 -c 'import json, sys
+for v in json.load(open(sys.argv[1]))["vaults"].values(): print(v["path"])' \
+        "$HOME/.config/obsidian/obsidian.json" 2>/dev/null
+}
+while IFS= read -r vault; do
+    [[ -d "$vault/.obsidian" ]] || continue
+    dir="$vault/.obsidian/themes/Omarchy"
+    mkdir -p "$dir"
+    [[ -f "$dir/manifest.json" ]] || cat >"$dir/manifest.json" <<'EOF2'
+{
+  "name": "Omarchy",
+  "version": "1.0.0",
+  "minAppVersion": "0.16.0",
+  "description": "Follows the desktop theme (theme-set)",
+  "author": "theme-set"
+}
+EOF2
+    cp "$CURRENT/obsidian.css" "$dir/theme.css"
+done < <(obsidian_vaults || true)
 
 for sock in "${XDG_RUNTIME_DIR:-/run/user/$UID}"/nvim.*.0; do
     [[ -S $sock ]] && timeout 2 nvim --server "$sock" --remote-expr 'v:lua.ThemeReload()' >/dev/null 2>&1 &

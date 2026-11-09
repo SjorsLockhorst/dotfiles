@@ -1,0 +1,9 @@
+#!/bin/bash
+# Waybar: running Docker containers. Prints nothing (module hidden) when none run.
+names=$(docker ps --format '{{.Names}}' 2>/dev/null) || exit 0
+[[ -n $names ]] || { echo '{"text": ""}'; exit 0; }
+count=$(wc -l <<<"$names")
+label=$count
+[[ ${1:-} == --full ]] && label="$count running"
+jq -cn --arg t "󰡨 $label" --arg tip "$(printf 'Running containers:\n%s' "$names")" \
+    '{text: $t, tooltip: $tip, class: "running"}'
