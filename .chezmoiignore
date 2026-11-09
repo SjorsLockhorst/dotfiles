@@ -23,3 +23,6 @@ key.txt.age
 ./dot_playbooks
 ./local/bin/run_backup
 {{ end -}}
+
+# Notes for this repo, not a dotfile
+CLAUDE.md

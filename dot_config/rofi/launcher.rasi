@@ -1,22 +1,8 @@
-/**
- * Catppuccin Mocha theme
- * Color palette copied from https://catppuccin.com/palette
- * https://github.com/hiimsergey/rofi-catppuccin
- */
+/* Layout of the launcher; colours come from the active theme (theme-set) */
+@import "~/.local/state/theme/current/rofi.rasi"
 
 * {
-    base: #1e1e2e;
-    surface0: #313244;
-    overlay0: #6c7086;
-    text: #cdd6f4;
-
-    mauve: #cba6f7;
-    red: #f38ba8;
-    peach: #fab387;
-    green: #a6e3a1;
-    lavender: #b4befe;
-
-    background-color: @base;
+    background-color: @background;
 }
 
 window {
@@ -25,7 +11,7 @@ window {
 
     border: 3;
     border-radius: 10;
-    border-color: @lavender;
+    border-color: @accent;
 }
 
 mainbox {
@@ -34,27 +20,27 @@ mainbox {
 }
 
 inputbar {
-    color: @text;
+    color: @foreground;
     padding: 14;
-    background-color: @base;
+    background-color: @background;
 }
 
 message {
     padding: 10;
-    background-color: @overlay0;
+    background-color: @muted;
 }
 
 listview {
     padding: 8;
     border-radius: 0 0 10 10;
     border: 2 2 2 2;
-    border-color: @base;
-    background-color: @base;
+    border-color: @background;
+    background-color: @background;
     dynamic: false;
 }
 
 textbox {
-    text-color: @text;
+    text-color: @foreground;
     background-color: inherit;
 }
 
@@ -74,11 +60,11 @@ element {
     padding: 5;
     vertical-align: 0.5;
     border-radius: 10;
-    background-color: @surface0;
+    background-color: @lighter-background;
 }
 
 element.selected.normal {
-    background-color: @overlay0;
+    background-color: @muted;
 }
 
 element.alternate.normal {
@@ -86,7 +72,7 @@ element.alternate.normal {
 }
 
 element.normal.active, element.alternate.active {
-    background-color: @peach;
+    background-color: @orange;
 }
 
 element.selected.active {
@@ -98,7 +84,7 @@ element.normal.urgent, element.alternate.urgent {
 }
 
 element.selected.urgent {
-    background-color: @mauve;
+    background-color: @magenta;
 }
 
 element-text, element-icon {
@@ -106,9 +92,9 @@ element-text, element-icon {
     margin: 0 10 0 0;
     vertical-align: 0.5;
     background-color: inherit;
-    text-color: @text;
+    text-color: @foreground;
 }
 
 element-text .active, element-text .urgent {
-    text-color: @base;
+    text-color: @background;
 }

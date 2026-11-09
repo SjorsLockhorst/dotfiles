@@ -47,11 +47,29 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - `~/.local/share/nvim/mason/` — Mason-installed LSP servers / tools / treesitter parsers.
 
 ## Neovim config gotchas
-- Plugin `setup()` calls live in `dot_config/nvim/after/plugin/<name>.lua`, not in lazy.lua
-  `opts`. Those after/plugin calls run later and override lazy `opts` (e.g. catppuccin's
-  `transparent_background` set via lazy `opts` had no effect). Edit the after/plugin file.
+- Some plugin `setup()` calls live in `dot_config/nvim/after/plugin/<name>.lua`. Those run
+  later and override lazy.lua `opts`, so check there before changing a plugin's opts.
+- The colorscheme is NOT set in nvim config: it follows the desktop theme (see Themes).
+  Per-colorscheme preferences (e.g. catppuccin integrations) go in `overrides` in
+  `dot_config/nvim/lua/base/theme.lua`.
 
 ## Zsh
 - Machine-specific / work-only shell config goes in `~/.zshrc.local` (NOT chezmoi-managed,
   sourced at the end of `dot_zshrc.tmpl`). Setup scripts that append to `~/.zshrc` cause
   drift; move such lines into `~/.zshrc.local`.
+
+## Themes (live switching, omarchy-style)
+- `theme-set <name>` / `theme-menu` (SUPER+CTRL+SHIFT+SPACE) / `theme-bg-next`
+  (SUPER+CTRL+SPACE) / `theme-list` / `theme-install <git-url>`, all in `dot_local/bin/`.
+- Themes use omarchy's format (`colors.toml` + extras). Official ones come from the omarchy repo
+  via `.chezmoiexternal.toml` (pinned commit) into `~/.local/share/theme/themes/`. Own themes:
+  `dot_config/theme/themes/<name>/`. Community installs: `~/.local/share/theme/installed/`
+  (untrusted: their `.lua`/terminal configs are ignored by `theme-render`).
+- Per-app templates: `dot_config/theme/templates/*.tpl`, omarchy placeholder syntax
+  (`{{ accent }}`, `{{ accent_strip }}`, `{{ mix a b 20% }}`). NOT chezmoi templates (no `.tmpl`).
+- `theme-set` renders into `~/.local/state/theme/current/` (runtime state, not managed) and
+  reloads apps. App configs only point at `current/` files, so never hardcode colours in them.
+- Changing a template only takes effect after `chezmoi apply` (the run_onchange theme-refresh
+  script re-renders) or `theme-set --refresh`.
+- Own wallpapers per theme: `dot_config/theme/backgrounds/<theme>/` (overrides the theme's).
+- rofi variable names can't contain `_` (the whole .rasi silently fails to parse).

@@ -58,3 +58,14 @@
     url = "https://github.com/vinceliuice/Tela-icon-theme/archive/refs/tags/2023-02-03.tar.gz"
     stripComponents = 1
 {{- end }}
+
+{{ if .hyprland -}}
+{{ $omarchyCommit := "b99593ed3c5d104210394669efc88a684f76ddbf" -}}
+# Official omarchy themes (MIT), used by ~/.local/bin/theme-set
+[".local/share/theme/themes"]
+    type = "archive"
+    url = "https://github.com/basecamp/omarchy/archive/{{ $omarchyCommit }}.tar.gz"
+    stripComponents = 2
+    include = ["*/themes/**"]
+    exact = true
+{{- end }}

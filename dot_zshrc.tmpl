@@ -10,7 +10,18 @@ export ZSH="$HOME/.oh-my-zsh"
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
 ZSH_THEME="robbyrussell"
-source ~/.oh-my-zsh/custom/themes/catppuccin_mocha-zsh-syntax-highlighting.zsh
+# Syntax highlighting colours follow the active theme (theme-set). Re-source
+# them before a prompt when the theme changed, so open shells follow too.
+_theme_hl=~/.local/state/theme/current/zsh-highlight.zsh
+[[ -f $_theme_hl ]] && source $_theme_hl
+_theme_hl_gen=${_theme_hl:A}
+_theme_hl_refresh() {
+    [[ ${_theme_hl:A} != $_theme_hl_gen && -f $_theme_hl ]] || return
+    _theme_hl_gen=${_theme_hl:A}
+    source $_theme_hl
+}
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _theme_hl_refresh
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load

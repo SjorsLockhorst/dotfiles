@@ -1,0 +1,11 @@
+{{ if .hyprland -}}
+#!/bin/bash
+# Re-render the active theme whenever a template changes (also sets the
+# default theme on a fresh machine). Hashes of the inputs:
+{{- range (glob (joinPath .chezmoi.sourceDir "dot_config/theme/templates/*.tpl")) }}
+# {{ base . }} {{ include . | sha256sum }}
+{{- end }}
+# theme-render {{ include "dot_local/bin/executable_theme-render" | sha256sum }}
+
+"$HOME/.local/bin/theme-set" --refresh
+{{ end -}}

@@ -1,4 +1,5 @@
-@import "mocha.css";
+/* Colours come from the active theme (theme-set swaps this file and reloads waybar) */
+@import "../../.local/state/theme/current/waybar.css";
 
 * {
   font-family: FantasqueSansMono Nerd Font;
@@ -8,7 +9,7 @@
 
 #waybar {
   background: transparent;
-  color: @text;
+  color: @foreground;
   margin: 5px 5px;
 }
 
@@ -17,23 +18,23 @@
   padding-left: 1rem;
   padding-right: 1rem;
   margin: 5px;
-  background-color: @surface0;
+  background-color: @lighter_background;
   margin-left: 1rem;
 }
 
 #workspaces button {
-  color: @lavender;
+  color: @accent;
   border-radius: 1rem;
   padding: 0.4rem;
 }
 
 #workspaces button.active {
-  color: @sky;
+  color: @cyan;
   border-radius: 1rem;
 }
 
 #workspaces button:hover {
-  color: @sapphire;
+  color: @bright_blue;
   border-radius: 1rem;
 }
 
@@ -57,13 +58,13 @@
 #custom-pomodoro,
 #custom-power
 {
-  background-color: @surface0;
+  background-color: @lighter_background;
   padding: 0.5rem 1rem;
   margin: 5px 0;
 }
 
 #{
-  background-color: @surface0;
+  background-color: @lighter_background;
   padding: 0.5rem 1rem;
   margin: 5px 0;
 }
@@ -86,7 +87,7 @@
 }
 
 #battery.good:not(.charging) {
-  color: @text;
+  color: @foreground;
 }
 
 #battery.warning:not(.charging) {
@@ -110,13 +111,13 @@
 }
 
 #custom-music {
-  color: @mauve;
+  color: @magenta;
   border-radius: 1rem;
 }
 
 #custom-lock {
     border-radius: 1rem 0px 0px 1rem;
-    color: @lavender;
+    color: @accent;
 }
 
 #custom-power {

@@ -1,0 +1,24 @@
+#!/bin/bash
+# Switch to the next wallpaper of the current theme (remembered per theme)
+
+set -euo pipefail
+
+STATE="$HOME/.local/state/theme"
+CURRENT="$STATE/current"
+name=$(cat "$STATE/name")
+
+mapfile -t bgs < <(find -L "$CURRENT/backgrounds/" -maxdepth 1 -type f -iregex '.*\.\(jpe?g\|png\|webp\)' | sort)
+(( ${#bgs[@]} > 0 )) || { echo "theme-bg-next: $name has no wallpapers" >&2; exit 1; }
+
+now=$(readlink -f "$CURRENT/background" 2>/dev/null || true)
+next="${bgs[0]}"
+for i in "${!bgs[@]}"; do
+    if [[ $(readlink -f "${bgs[$i]}") == "$now" ]]; then
+        next="${bgs[$(( (i + 1) % ${#bgs[@]} ))]}"
+    fi
+done
+
+ln -sfn "$next" "$CURRENT/background"
+mkdir -p "$STATE/backgrounds"
+basename "$next" >"$STATE/backgrounds/$name"
+hyprctl hyprpaper wallpaper ",$(readlink -f "$next")" >/dev/null

@@ -2,7 +2,7 @@
 -- See `:help lualine.txt`
 require('lualine').setup {
   options = {
-    theme = 'catppuccin-nvim',
+    theme = 'auto',
     component_separators = '|',
     section_separators = '',
   },

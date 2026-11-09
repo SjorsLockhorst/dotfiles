@@ -111,7 +111,8 @@ require("lazy").setup({
         build = ":TSUpdate",
     },
     { "shaunsingh/nord.nvim" },
-    { "catppuccin/nvim",                    name = "catppuccin", priority = 1000 },
+    -- Colorscheme plugins of every desktop theme (see base/theme.lua)
+    require("base.theme").specs(),
     { "windwp/nvim-ts-autotag" },
     { "alker0/chezmoi.vim" },
 

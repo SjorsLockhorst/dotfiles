@@ -1,0 +1,8 @@
+#!/bin/bash
+# List available themes (first match wins, same order as theme-set)
+
+for dir in "$HOME/.config/theme/themes" "$HOME/.local/share/theme/installed" "$HOME/.local/share/theme/themes"; do
+    for theme in "$dir"/*/colors.toml; do
+        [[ -f $theme ]] && basename "$(dirname "$theme")"
+    done
+done | awk '!seen[$0]++' | sort

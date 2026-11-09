@@ -1,7 +1,12 @@
 -- Hyprland Lua config (replaces the deprecated hyprlang hyprland.conf).
 -- https://wiki.hypr.land/Configuring/Start/
 
-local colors = require("mocha")
+-- Colours come from the active theme. dofile (not require) so `hyprctl reload`
+-- picks up a new theme instead of a cached module. Falls back if none is set yet.
+local ok, colors = pcall(dofile, os.getenv("HOME") .. "/.local/state/theme/current/hypr-colors.lua")
+if not ok then
+    colors = { active_border = "rgb(89b4fa)", inactive_border = "rgba(595959aa)", shadow = "rgb(94e2d5)" }
+end
 
 
 ------------------
@@ -72,8 +77,8 @@ hl.config({
         border_size = 2,
 
         col = {
-            active_border   = colors.flamingo,
-            inactive_border = colors.lavender,
+            active_border   = colors.active_border,
+            inactive_border = colors.inactive_border,
         },
 
         resize_on_border = false,
@@ -93,7 +98,7 @@ hl.config({
             enabled      = true,
             range        = 4,
             render_power = 3,
-            color        = colors.sky,
+            color        = colors.shadow,
         },
 
         blur = {
@@ -222,6 +227,9 @@ hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 hl.bind("Print",             hl.dsp.exec_cmd("hyprshot -m window"))
 hl.bind(mainMod .. " + S",   hl.dsp.exec_cmd("hyprshot -m region"))
 hl.bind("SUPER + L",         hl.dsp.exec_cmd("hyprlock"))
+-- Theme picker and next wallpaper (same keys as omarchy)
+hl.bind("SUPER + CTRL + SHIFT + SPACE", hl.dsp.exec_cmd("$HOME/.local/bin/theme-menu"))
+hl.bind("SUPER + CTRL + SPACE",         hl.dsp.exec_cmd("$HOME/.local/bin/theme-bg-next"))
 hl.bind(mainMod .. " + B",   hl.dsp.exec_cmd("gtk-launch $(xdg-settings get default-web-browser)"))
 
 -- TODO: Make this more modular so we can spinn up also other shells easily

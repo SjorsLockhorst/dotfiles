@@ -1,0 +1,36 @@
+#!/bin/bash
+# Install a community theme from a git repo (omarchy format, see https://omarchy.org/themes/)
+#
+# Usage: theme-install <git-url>     e.g. https://github.com/someone/omarchy-dracula-theme
+#        theme-install --remove <name>
+#
+# Only the colours are used: the theme's .lua and terminal configs can run code,
+# so theme-render ignores them for installed themes.
+
+set -euo pipefail
+
+INSTALLED="$HOME/.local/share/theme/installed"
+
+if [[ ${1:-} == "--remove" ]]; then
+    [[ -n ${2:-} && -d "$INSTALLED/$2" ]] || { echo "theme-install: '$2' is not an installed theme" >&2; exit 1; }
+    rm -rf "${INSTALLED:?}/$2"
+    echo "Removed $2"
+    exit 0
+fi
+
+url="${1:?Usage: theme-install <git-url> | --remove <name>}"
+[[ $url == https://* || $url == git@* ]] || { echo "theme-install: expected an https:// or git@ URL" >&2; exit 1; }
+
+name=$(basename -- "${url%/}" .git | sed -E 's/^omarchy-//; s/-theme$//' | tr '[:upper:]' '[:lower:]')
+[[ $name =~ ^[a-z0-9][a-z0-9._-]*$ ]] || { echo "theme-install: can't derive a theme name from $url" >&2; exit 1; }
+
+mkdir -p "$INSTALLED"
+rm -rf "${INSTALLED:?}/$name"
+git clone --quiet --depth 1 -- "$url" "$INSTALLED/$name"
+if [[ ! -f "$INSTALLED/$name/colors.toml" ]]; then
+    rm -rf "${INSTALLED:?}/$name"
+    echo "theme-install: $url has no colors.toml, not an omarchy theme" >&2
+    exit 1
+fi
+
+echo "Installed $name. Switch with: theme-set $name"

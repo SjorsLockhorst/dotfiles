@@ -1,0 +1,22 @@
+#!/bin/bash
+# Pick a theme with rofi, showing each theme's preview
+
+dirs=("$HOME/.config/theme/themes" "$HOME/.local/share/theme/installed" "$HOME/.local/share/theme/themes")
+current=$(cat "$HOME/.local/state/theme/name" 2>/dev/null)
+
+entries() {
+    local name dir
+    while read -r name; do
+        for dir in "${dirs[@]}"; do
+            if [[ -f "$dir/$name/colors.toml" ]]; then
+                printf '%s\0icon\x1f%s\n' "$name" "$dir/$name/preview.png"
+                break
+            fi
+        done
+    done < <("$HOME/.local/bin/theme-list")
+}
+
+choice=$(entries | rofi -dmenu -i -show-icons -p "Theme" -select "$current" \
+    -theme-str 'window { width: 900px; } listview { columns: 3; lines: 3; } element { orientation: vertical; } element-icon { size: 220px; } element-text { horizontal-align: 0.5; }')
+
+[[ -n $choice ]] && exec "$HOME/.local/bin/theme-set" "$choice"
