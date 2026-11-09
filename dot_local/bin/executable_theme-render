@@ -24,6 +24,7 @@ TEMPLATE_DIR = Path(os.environ.get("THEME_TEMPLATES", Path.home() / ".config/the
 TRUSTED_OVERRIDES = {"btop.theme", "neovim.lua"}
 UNTRUSTED_OVERRIDES = {"btop.theme"}
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+SAFE_TOKEN = re.compile(r"#[0-9A-Fa-f]{3,8}|rgba?\([0-9A-Fa-f., %]+\)|-?\d+(\.\d+)?(deg)?|[A-Za-z_-]+")
 
 
 def parse_colors(path):
@@ -37,10 +38,22 @@ def parse_colors(path):
             m = re.match(r'^\s*([A-Za-z0-9_-]+)\s*=\s*["\']?([^"\'#]*)', line)
             if m:
                 data[m.group(1)] = m.group(2).strip()
-    return {k: str(v) for k, v in data.items() if isinstance(v, (str, int, float))}
+    # Values are pasted into shell, Lua and tmux files, so only accept things that
+    # look like colours (or a gradient of them, or a bare word like "dark").
+    # Anything else could break out of the quotes and run code.
+    colors = {}
+    for key, value in data.items():
+        value = str(value).strip()
+        if all(SAFE_TOKEN.fullmatch(t) for t in value.split()):
+            colors[key] = value
+        else:
+            print(f"theme-render: ignoring {key}: not a colour", file=sys.stderr)
+    return colors
 
 
 def mix(a, b, amount):
+    if not (HEX.match(a) and HEX.match(b)):
+        return a  # can't mix rgba()/gradients; keep the first colour
     amount = str(amount)
     amount = float(amount[:-1]) / 100 if amount.endswith("%") else float(amount)
     if amount > 1:
@@ -76,6 +89,13 @@ def resolve(c):
         alias(key, f"color{n}")
     alias("magenta", "purple")
     alias("bright_magenta", "bright_purple")
+
+    # A broken or minimal theme still renders: missing basics fall back
+    c.setdefault("background", "#000000")
+    c.setdefault("foreground", "#ffffff")
+    for base in ("red", "green", "yellow", "blue", "magenta", "cyan"):
+        c.setdefault(base, c["foreground"])
+    c.setdefault("accent", c["blue"])
 
     c.setdefault("light_foreground", c.get("color7") or c["foreground"])
     c.setdefault("bright_foreground", c.get("color15") or c["foreground"])

@@ -6,6 +6,8 @@
 # {{ base . }} {{ include . | sha256sum }}
 {{- end }}
 # theme-render {{ include "dot_local/bin/executable_theme-render" | sha256sum }}
+# theme-set {{ include "dot_local/bin/executable_theme-set" | sha256sum }}
+# themes {{ include ".chezmoiexternal.toml" | sha256sum }}
 
 "$HOME/.local/bin/theme-set" --refresh
 {{ end -}}
