@@ -29,6 +29,12 @@ your tests will silently reflect the un-applied version.
 - `chezmoi source-path <deployed-file>` — find the source file for a deployed path.
 - `chezmoi managed | grep <x>` — list what chezmoi manages.
 
+> Note: `chezmoi apply` blocks on an interactive prompt (hangs in non-interactive shells)
+> when a deployed file was modified since chezmoi last wrote it. Use
+> `chezmoi diff --no-pager <file>` to check it first, then `chezmoi apply --force <file>`.
+> Pass individual files: `chezmoi diff ~/.config/kitty` (a directory) missed a pending
+> change to `~/.config/kitty/kitty.conf`.
+
 > Note: `chezmoi diff <source-path>` reports "not managed" — it expects a **target** (deployed)
 > path, not the repo-relative source path. Use `chezmoi diff` with no args, or pass a `~/...` path.
 
