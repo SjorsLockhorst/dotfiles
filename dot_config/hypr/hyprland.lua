@@ -56,6 +56,7 @@ end)
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("auto_proxy", "http://127.0.0.1:8000/proxy.pac")
 
 
 -----------------------
@@ -244,13 +245,11 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
--- Confine the cursor inside Civilization to prevent moving to adjacent monitors
 hl.window_rule({
-    name = "civ-confine-pointer",
+    name = "civ5-lock-pointer",
     match = {
-        -- Match Steam App ID (e.g., steam_app_289070 for Civ VI) or class pattern
-        class = "^(steam_app_.*)$",
+        class = "^(Civ5XP)$",
     },
+    fullscreen = true,
     confine_pointer = true,
-    fullscreen = true
 })

@@ -45,3 +45,8 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   update (`:Lazy update <plugin>`), which also rewrites this lock.
 - `~/.local/share/nvim/lazy/` — installed plugins.
 - `~/.local/share/nvim/mason/` — Mason-installed LSP servers / tools / treesitter parsers.
+
+## Neovim config gotchas
+- Plugin `setup()` calls live in `dot_config/nvim/after/plugin/<name>.lua`, not in lazy.lua
+  `opts`. Those after/plugin calls run later and override lazy `opts` (e.g. catppuccin's
+  `transparent_background` set via lazy `opts` had no effect). Edit the after/plugin file.
