@@ -50,3 +50,8 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - Plugin `setup()` calls live in `dot_config/nvim/after/plugin/<name>.lua`, not in lazy.lua
   `opts`. Those after/plugin calls run later and override lazy `opts` (e.g. catppuccin's
   `transparent_background` set via lazy `opts` had no effect). Edit the after/plugin file.
+
+## Zsh
+- Machine-specific / work-only shell config goes in `~/.zshrc.local` (NOT chezmoi-managed,
+  sourced at the end of `dot_zshrc.tmpl`). Setup scripts that append to `~/.zshrc` cause
+  drift; move such lines into `~/.zshrc.local`.

@@ -82,7 +82,7 @@ plugins=(
 	chezmoi
 	emoji
 	archlinux
-	kubernetes
+	kubectl
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -176,3 +176,19 @@ export PATH="$PATH:/home/sjors/.lmstudio/bin"
 
 export PNPM_HOME="/home/sjors/.local/share/pnpm"
 export PATH="$PATH:$PNPM_HOME"
+
+if (( $+commands[crate] )); then
+    _crate() {
+        if (( CURRENT == 2 )); then
+            local -a cmds; cmds=(${(f)"$(crate __commands)"}); _describe command cmds
+        elif [[ $words[2] == rekordbox ]] && (( CURRENT == 3 )); then
+            compadd relink sync-moves merge-usb merge-dupes remove deleted
+        else
+            _files
+        fi
+    }
+    compdef _crate crate
+fi
+
+# Machine-specific / work config, not managed by chezmoi
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
