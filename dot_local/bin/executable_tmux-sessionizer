@@ -3,32 +3,26 @@
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    selected=$(find ~/ ~/.local/share/chezmoi -path "$HOME/.cache" -prune -o -mindepth 1 -maxdepth 6 -name ".git" -exec dirname {} \; | fzf)
-
+    # Silence permission errors (e.g. root-owned docker volumes) and dedupe
+    # (~/.local/share/chezmoi is found via both search roots).
+    selected=$(find ~/ ~/.local/share/chezmoi -mindepth 1 -maxdepth 6 \
+        -path "$HOME/.cache" -prune -o -name ".git" -printf '%h\n' 2>/dev/null |
+        sort -u | fzf)
 fi
 
 if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
+selected_name=$(basename "$selected" | tr .: __)
 
-if [[ -z $TMUX ]]; then
-    # If we are not in a tmux session
-    if pgrep -x "tmux" > /dev/null; then
-        # tmux is running, so just create a new detached session and switch to it
-        if ! tmux has-session -t=$selected_name 2> /dev/null; then
-            tmux new-session -ds $selected_name -c $selected
-        fi
-        tmux switch-client -t $selected_name
-    else
-        # tmux is not running, so start a new session and attach to it
-        tmux new-session -s $selected_name -c $selected
-    fi
+# Create the session only if it doesn't exist yet (this also starts the server if needed).
+if ! tmux has-session -t "=$selected_name" 2>/dev/null; then
+    tmux new-session -ds "$selected_name" -c "$selected"
+fi
+
+if [[ -n $TMUX ]]; then
+    tmux switch-client -t "=$selected_name"
 else
-    # We are in a tmux session, so just create a new detached session and switch to it
-    if ! tmux has-session -t=$selected_name 2> /dev/null; then
-        tmux new-session -ds $selected_name -c $selected
-    fi
-    tmux switch-client -t $selected_name
+    tmux attach-session -t "=$selected_name"
 fi
