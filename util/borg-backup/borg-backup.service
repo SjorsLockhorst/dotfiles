@@ -1,0 +1,11 @@
+[Unit]
+Description=Borg backups (storagebox, nas)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/borg-backup-run
+# Keep the laptop usable while it runs.
+Nice=10
+IOSchedulingClass=idle

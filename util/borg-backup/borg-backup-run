@@ -1,0 +1,88 @@
+#!/bin/bash
+# Runs borg backups as root: by borg-backup.service on a timer, or by hand via
+# `run_backup`. For each target, runs its backup script (created by the
+# ~/.playbooks setup_<target>.yml playbooks) if its host is reachable, and
+# logs a skip otherwise. Under systemd everything goes to the journal:
+#   journalctl -u borg-backup              full log
+#   journalctl -u borg-backup -p warning   only skips and failures
+# The last result per target goes to $status_dir/<target>.json (world-readable,
+# no secrets), which waybar-backup shows in the bar.
+#
+# Usage: borg-backup-run [target...]   (default: all targets)
+set -uo pipefail
+
+home=/home/borgbackup
+status_dir=/var/lib/borg-backup
+all_targets=(storagebox nas)
+
+if (( $# )); then targets=("$@"); else targets=("${all_targets[@]}"); fi
+for t in "${targets[@]}"; do
+    [[ " ${all_targets[*]} " == *" $t "* ]] || { echo "unknown target: $t" >&2; exit 2; }
+done
+
+# log <priority> <message>: the priority prefix (3 = error, 4 = warning) is
+# only added for the journal, so it doesn't show in a terminal.
+log() {
+    local prio=$1; shift
+    if [[ -n ${JOURNAL_STREAM:-} ]]; then echo "<$prio>$*"; else echo "$*"; fi
+}
+
+# write_status <target> <result>: results are running, ok, warning, failed,
+# interrupted, unreachable or not-setup. last_success survives skips/failures.
+umask 022
+mkdir -p "$status_dir"
+write_status() {
+    local file=$status_dir/$1.json now success
+    now=$(date +%s)
+    success=$(sed -n 's/.*"last_success": *\([0-9][0-9]*\).*/\1/p' "$file" 2>/dev/null)
+    [[ $2 == ok || $2 == warning ]] && success=$now
+    printf '{"last_attempt": %s, "result": "%s", "last_success": %s}\n' \
+        "$now" "$2" "${success:-null}" >"$file.tmp" && mv "$file.tmp" "$file"
+}
+
+# One run at a time (timer and a manual run_backup could overlap).
+exec 9>/run/borg-backup.lock
+flock -n 9 || { log 4 "another backup is already running, skipping"; exit 0; }
+
+current=
+trap '[[ -n $current ]] && write_status "$current" interrupted; log 3 "${current:-backup}: interrupted"; exit 2' INT TERM
+
+failed=0
+for t in "${targets[@]}"; do
+    script=$home/backup_$t.sh
+    env=$home/targets/$t
+    if [[ ! -f $script || ! -f $env ]]; then
+        log 4 "$t: skipped, not set up (run ~/.playbooks/setup_$t.yml)"
+        write_status "$t" not-setup
+        continue
+    fi
+
+    # BORG_REPO looks like ssh://user@host[:port]/./repo
+    repo=$(. "$env" && echo "$BORG_REPO")
+    hostport=${repo#ssh://*@}
+    hostport=${hostport%%/*}
+    host=${hostport%:*}
+    port=22
+    [[ $hostport == *:* ]] && port=${hostport##*:}
+
+    if ! timeout 10 bash -c ">/dev/tcp/$host/$port" 2>/dev/null; then
+        log 4 "$t: skipped, $host:$port is unreachable"
+        write_status "$t" unreachable
+        continue
+    fi
+
+    log 6 "$t: starting backup"
+    current=$t
+    write_status "$t" running
+    bash "$script"
+    rc=$?
+    current=
+    case $rc in
+        0) log 6 "$t: backup finished"; write_status "$t" ok ;;
+        1) log 4 "$t: backup finished with warnings"; write_status "$t" warning ;;
+        *) log 3 "$t: backup failed (exit $rc)"; write_status "$t" failed; failed=1 ;;
+    esac
+done
+
+# A skip is not a failure; a failed backup marks the service failed.
+exit $failed

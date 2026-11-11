@@ -1,0 +1,51 @@
+{{ if (eq .chezmoi.osRelease.id "arch") -}}
+#!/bin/bash
+# Daily timeshift snapshots (keep 5) on a btrfs root, like finishing the
+# timeshift GUI's setup wizard with "daily" on. Timeshift's own cron job
+# (/etc/cron.d/timeshift-hourly) runs `timeshift --check`, which needs cronie
+# (enabled in enable-services). Pre-upgrade snapshots come from
+# timeshift-autosnap, separately; neither removes the other's snapshots.
+set -euo pipefail
+
+conf=/etc/timeshift/timeshift.json
+
+# Already set up (by this script or the GUI): leave it, so GUI changes stick.
+if [[ -f $conf ]] && jq -e '.do_first_run == "false"' "$conf" >/dev/null; then
+    echo "timeshift: already set up, leaving $conf as is"
+    exit 0
+fi
+if [[ $(findmnt -no FSTYPE /) != btrfs ]]; then
+    echo "timeshift: / is not btrfs, not setting up snapshots"
+    exit 0
+fi
+
+dev=$(findmnt -nvo SOURCE /)   # -v: without the [/@] subvolume suffix
+uuid=$(findmnt -no UUID /)
+# On LUKS, timeshift also stores the encrypted partition underneath.
+parent_uuid=
+if [[ $(lsblk -dno TYPE "$dev") == crypt ]]; then
+    # -s lists the device and what it sits on: root (crypt), nvme0n1p2 (part), ...
+    part=$(lsblk -snro NAME,TYPE "$dev" | awk '$2 == "part" { print $1; exit }')
+    parent_uuid=$(lsblk -dno UUID "/dev/$part")
+fi
+
+jq --arg uuid "$uuid" --arg parent "$parent_uuid" '
+    .backup_device_uuid = $uuid | .parent_device_uuid = $parent
+  | .btrfs_mode = "true" | .do_first_run = "false"
+  | .schedule_daily = "true" | .count_daily = "5"
+  # default.json is older than the app: write the keys as the GUI does
+  | del(.include_btrfs_home)
+  | .include_btrfs_home_for_backup = "false" | .include_btrfs_home_for_restore = "false"
+  | .date_format = "%Y-%m-%d %H:%M:%S"
+' /etc/timeshift/default.json | sudo tee "$conf" >/dev/null
+
+# What timeshift writes when a schedule is saved in the GUI.
+sudo tee /etc/cron.d/timeshift-hourly >/dev/null <<'EOF'
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=""
+
+0 * * * * root timeshift --check --scripted
+EOF
+echo "timeshift: daily snapshots set up on $dev"
+{{ end -}}

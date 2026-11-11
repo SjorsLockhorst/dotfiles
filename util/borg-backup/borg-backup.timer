@@ -1,0 +1,14 @@
+[Unit]
+Description=Scheduled borg backups (storagebox, nas)
+
+[Timer]
+# When to back up, in systemd calendar syntax (see `man systemd.time`), e.g.
+# `daily`, `*-*-* 12:00`, or several OnCalendar= lines. Picked midday so the
+# laptop is usually on and on the home network/Tailscale.
+OnCalendar=*-*-* 12:00
+# Run a missed backup (laptop off/asleep) as soon as possible afterwards.
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

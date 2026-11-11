@@ -3,8 +3,9 @@
 # symlinks), not that they start.
 load helpers
 
-@test "grub-btrfsd is enabled" {
+@test "grub-btrfsd and cronie are enabled" {
     systemctl is-enabled grub-btrfsd.service
+    systemctl is-enabled cronie.service
 }
 
 @test "desktop services are enabled" {
@@ -19,4 +20,16 @@ load helpers
 @test "the user can use docker without sudo" {
     skip_unless hyprland
     id -nG "$(id -un)" | grep -qw docker
+}
+
+@test "borg backup timer is installed and enabled" {
+    skip_unless backup
+    [ -x /usr/local/bin/borg-backup-run ]
+    systemctl is-enabled borg-backup.timer
+}
+
+@test "timeshift takes daily snapshots" {
+    [ "$(findmnt -no FSTYPE /)" = btrfs ] || skip "/ is not btrfs (Docker)"
+    jq -e '.schedule_daily == "true" and .do_first_run == "false"' /etc/timeshift/timeshift.json
+    grep -q 'timeshift --check' /etc/cron.d/timeshift-hourly
 }

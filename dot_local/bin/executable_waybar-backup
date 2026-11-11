@@ -1,0 +1,145 @@
+#!/bin/bash
+# Waybar: borg backups and timeshift snapshots as one coloured icon (the worst
+# of both); details in the tooltip. Everything is read without root:
+# - borg: status files borg-backup-run writes, and borg-backup.timer's state
+# - timeshift: the snapshot list grub-btrfsd keeps in grub-btrfs.cfg, and
+#   whether its schedule (timeshift.json + cron file + cronie) is on
+# Classes: ok (dimmed), warning, critical, running. Timeshift never makes it
+# critical: snapshots are the second line of defence.
+
+WARN_DAYS=2   # no successful backup for this long: warning
+CRIT_DAYS=7   # ... or this long: critical
+SNAP_WARN_DAYS=2   # no scheduled timeshift snapshot for this long: warning
+status_dir=${BORG_STATUS_DIR:-/var/lib/borg-backup}
+targets=(storagebox nas)
+grub_cfg=${GRUB_BTRFS_CFG:-/boot/grub/grub-btrfs.cfg}
+ts_conf=/etc/timeshift/timeshift.json
+
+now=$(date +%s)
+
+ago() {
+    local s=$(( now - $1 ))
+    if (( s < 3600 )); then echo "$(( s / 60 ))m"
+    elif (( s < 86400 )); then echo "$(( s / 3600 ))h"
+    else echo "$(( s / 86400 ))d"
+    fi
+}
+
+# when <epoch>: "today 12:04", "tomorrow 12:04" or "Fri 13 Nov 12:04"
+when() {
+    case $(date -d "@$1" +%F) in
+        $(date +%F)) date -d "@$1" '+today %H:%M' ;;
+        $(date -d tomorrow +%F)) date -d "@$1" '+tomorrow %H:%M' ;;
+        *) date -d "@$1" '+%a %-d %b %H:%M' ;;
+    esac
+}
+
+level=0      # 0 ok, 1 warning, 2 critical
+running=0
+oldest=      # oldest last_success over all targets
+never=0      # a target never succeeded
+tip=()
+for t in "${targets[@]}"; do
+    result=none attempt= success=
+    f=$status_dir/$t.json
+    [[ -r $f ]] && IFS=$'\t' read -r result attempt success \
+        < <(jq -r '[.result, .last_attempt, (.last_success // "")] | @tsv' "$f" 2>/dev/null)
+
+    case $result in
+        running) running=1; line="running since $(date -d "@$attempt" +%H:%M)" ;;
+        none) line="no backup recorded yet"; level=2 ;;
+        ok) line="ok, $(ago "$attempt") ago" ;;
+        *)
+            line="$result $(ago "$attempt") ago"
+            case $result in
+                warning) (( level < 1 )) && level=1 ;;
+                failed|interrupted|not-setup) level=2 ;;
+            esac
+            ;;
+    esac
+
+    if [[ -n $success ]]; then
+        [[ $result != ok ]] && line+=", last success $(ago "$success") ago"
+        [[ -z $oldest ]] || (( success < oldest )) && oldest=$success
+        days=$(( (now - success) / 86400 ))
+        if (( days >= CRIT_DAYS )); then level=2
+        elif (( days >= WARN_DAYS && level < 1 )); then level=1
+        fi
+    else
+        never=1
+        level=2
+        [[ $result != none ]] && line+=", never succeeded"
+    fi
+    tip+=("$t: $line")
+done
+
+# The schedule: readable without root.
+declare -A timer
+while IFS='=' read -r k v; do timer[$k]=$v; done < <(systemctl show borg-backup.timer \
+    -p UnitFileState -p ActiveState -p NextElapseUSecRealtime --timestamp=unix 2>/dev/null)
+if [[ ${timer[UnitFileState]} == enabled && ${timer[ActiveState]} == active ]]; then
+    next=${timer[NextElapseUSecRealtime]#@}
+    schedule="Schedule: on, next run ${next:+$(when "$next")}"
+else
+    schedule="Schedule: OFF (borg-backup.timer is ${timer[UnitFileState]:-not installed}, ${timer[ActiveState]:-inactive})"
+    (( level < 1 )) && level=1
+fi
+
+# --- Timeshift (skipped where it isn't set up, e.g. no btrfs root) ---
+ts_tip=()
+if [[ -r $ts_conf ]] && jq -e '.do_first_run == "false"' "$ts_conf" >/dev/null 2>&1; then
+    # Top-level entries: submenu '| 2026-11-11 11:51:23 | timeshift-btrfs/... | daily | comment |'
+    newest_sched= newest_auto= daily_count=0
+    while IFS='|' read -r _ date path type comment _; do
+        [[ $path == *timeshift-btrfs/snapshots/* ]] || continue
+        ts=$(date -d "$date" +%s) || continue
+        if [[ $type == *ondemand* ]]; then
+            [[ $comment == *'{timeshift-autosnap}'* ]] && (( ts > ${newest_auto:-0} )) && newest_auto=$ts
+        else
+            (( ts > ${newest_sched:-0} )) && newest_sched=$ts
+        fi
+        [[ $type == *daily* ]] && (( daily_count++ ))
+    done < <(grep "^submenu '|" "$grub_cfg" 2>/dev/null)
+
+    keep=$(jq -r .count_daily "$ts_conf")
+    if [[ -n $newest_sched ]]; then
+        ts_tip+=("Last scheduled: $(when "$newest_sched") ($daily_count of $keep daily kept)")
+        (( (now - newest_sched) / 86400 >= SNAP_WARN_DAYS && level < 1 )) && level=1
+    else
+        ts_tip+=("Last scheduled: none yet")
+        (( level < 1 )) && level=1
+    fi
+    if [[ -n $newest_auto ]]; then ts_tip+=("Last pre-upgrade: $(ago "$newest_auto") ago")
+    else ts_tip+=("Last pre-upgrade: none")
+    fi
+
+    # The schedule only works if all of these hold (each was broken once).
+    sched=$(jq -r '[to_entries[] | select((.key | startswith("schedule_")) and .value == "true")
+        | .key | ltrimstr("schedule_")] | join(", ")' "$ts_conf")
+    problems=()
+    [[ -n $sched ]] || problems+=("no schedule in timeshift")
+    [[ -f /etc/cron.d/timeshift-hourly ]] || problems+=("cron job missing")
+    systemctl is-active -q cronie || problems+=("cronie not running")
+    systemctl is-active -q grub-btrfsd || problems+=("grub-btrfsd not running, list may be stale")
+    if (( ${#problems[@]} )); then
+        ts_tip+=("Schedule: OFF ($(IFS=,; echo "${problems[*]}" | sed 's/,/, /g'))")
+        (( level < 1 )) && level=1
+    else
+        ts_tip+=("Schedule: on ($sched)")
+    fi
+fi
+
+classes=(ok warning critical)
+class=${classes[level]}
+icon=󰁯
+if (( running )); then class=running; icon=󰘿; fi
+
+if (( never )); then oldest_line="Oldest last success: never"
+else oldest_line="Oldest last success: $(ago "$oldest") ago"
+fi
+tooltip=$(
+    printf 'Borg backups\n'; printf '%s\n' "${tip[@]}" "$oldest_line" "$schedule"
+    (( ${#ts_tip[@]} )) && { printf '\nTimeshift snapshots\n'; printf '%s\n' "${ts_tip[@]}"; }
+)
+jq -cn --arg t "$icon" --arg tip "$tooltip" --arg c "$class" \
+    '{text: $t, tooltip: $tip, class: $c}'

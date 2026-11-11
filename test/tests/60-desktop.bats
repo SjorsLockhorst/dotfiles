@@ -32,3 +32,13 @@ setup() {
     grep -q '^Current=catppuccin' /etc/sddm.conf
     [ -d /usr/share/sddm/themes ]
 }
+
+@test "waybar-backup reports the status files" {
+    skip_unless hyprland
+    d=$BATS_TEST_TMPDIR now=$(date +%s)
+    echo "{\"last_attempt\": $now, \"result\": \"ok\", \"last_success\": $now}" >"$d/storagebox.json"
+    echo "{\"last_attempt\": $now, \"result\": \"unreachable\", \"last_success\": $((now - 3 * 86400))}" >"$d/nas.json"
+    run env BORG_STATUS_DIR="$d" ~/.local/bin/waybar-backup
+    echo "$output"
+    jq -e '.class == "warning" and (.tooltip | contains("last success 3d ago"))' <<<"$output"
+}

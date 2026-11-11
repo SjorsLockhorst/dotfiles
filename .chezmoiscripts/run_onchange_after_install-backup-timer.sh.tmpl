@@ -1,0 +1,22 @@
+{{ if .backup -}}
+#!/bin/bash
+# Install the scheduled borg backup (system units, so not a dotfile). The
+# schedule is in util/borg-backup/borg-backup.timer. Re-runs when these change:
+# {{ include "util/borg-backup/borg-backup-run" | sha256sum }}
+# {{ include "util/borg-backup/borg-backup.service" | sha256sum }}
+# {{ include "util/borg-backup/borg-backup.timer" | sha256sum }}
+set -euo pipefail
+
+src={{ .chezmoi.sourceDir | quote }}/util/borg-backup
+sudo install -Dm755 "$src/borg-backup-run" /usr/local/bin/borg-backup-run
+sudo install -Dm644 "$src/borg-backup.service" /etc/systemd/system/borg-backup.service
+sudo install -Dm644 "$src/borg-backup.timer" /etc/systemd/system/borg-backup.timer
+
+# Only start it when systemd is running (not in Docker).
+if [[ -d /run/systemd/system ]]; then
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now borg-backup.timer
+else
+    sudo systemctl enable borg-backup.timer
+fi
+{{ end -}}

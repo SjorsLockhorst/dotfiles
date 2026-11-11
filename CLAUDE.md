@@ -106,3 +106,26 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - A package a config calls (waybar click, Hyprland bind, script) must be in the install-packages
   lists, and a daemon it needs must be in `run_onchange_after_enable-services.sh.tmpl` (a fresh
   install leaves services off). AUR-only packages (e.g. blueberry) go in the yay step.
+
+## Backups (borg)
+- One-time setup (borgbackup user, keys, repos, `/home/borgbackup/backup_<target>.sh`) is done by the
+  `dot_playbooks/` ansible playbooks, run by hand. Not part of `chezmoi apply`.
+- Scheduling is in chezmoi: `util/borg-backup/` (timer, service, runner) is installed into `/etc` and
+  `/usr/local/bin` by `run_onchange_after_install-backup-timer.sh.tmpl` (only when `backup = true`).
+  Schedule: `OnCalendar=` in `borg-backup.timer`.
+- The runner TCP-checks each target's host:port (parsed from `BORG_REPO`) and logs a skip when it's
+  unreachable or not set up: `journalctl -u borg-backup -p warning`.
+- The runner writes `/var/lib/borg-backup/<target>.json` (last attempt, result, last success);
+  `waybar-backup` (`custom/backup`, next to updates) reads it. Hidden via `exec-if` until the runner
+  is installed. `run_backup` goes through the runner, so manual runs update the status too.
+
+## Snapshots (timeshift)
+- Daily snapshots (keep 5): `run_onchange_after_setup-timeshift.sh.tmpl` writes
+  `/etc/timeshift/timeshift.json` and `/etc/cron.d/timeshift-hourly` exactly as the GUI's setup does,
+  only when timeshift isn't set up yet (so GUI changes stick) and `/` is btrfs (not in Docker).
+- Timeshift schedules via cron: cronie must be enabled (in enable-services), or nothing happens.
+- Pre-upgrade snapshots come from `timeshift-autosnap` (pacman hook, own config in
+  `/etc/timeshift-autosnap.conf`, keeps its newest 3). Scheduled and autosnap snapshots never prune
+  each other's.
+- `waybar-backup` also shows timeshift, read without root from `/boot/grub/grub-btrfs.cfg` (kept up
+  to date by grub-btrfsd; lists each snapshot's date, tag and comment). `timeshift --list` needs root.

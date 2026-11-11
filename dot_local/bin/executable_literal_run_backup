@@ -1,34 +1,19 @@
 #!/bin/bash
+# Run a borg backup now. Goes through borg-backup-run (installed by chezmoi with
+# the backup timer), so the result also shows in waybar.
 
-# Check if an argument was provided
-if [ $# -eq 0 ]; then
-  echo "Usage: $0 {nas|storagebox|both}"
+runner=/usr/local/bin/borg-backup-run
+if [[ ! -x $runner ]]; then
+  echo "$runner is missing: run chezmoi apply (with backup = true) first" >&2
   exit 1
 fi
 
-# Define a function to handle backup tasks
-run_nas_backup() {
-  echo "Starting to backup to NAS..."
-  sudo bash /home/borgbackup/backup_nas.sh
-}
-
-run_storagebox_backup() {
-  echo "Starting to backup to storagebox..."
-  sudo bash /home/borgbackup/backup_storagebox.sh
-}
-
-# Handle the different arguments
-if [ "$1" == "nas" ]; then
-  run_nas_backup
-elif [ "$1" == "storagebox" ]; then
-  run_storagebox_backup
-elif [ "$1" == "both" ]; then
-  # Run both backups in parallel
-  echo "Starting to backup to both NAS and Storagebox..."
-  run_nas_backup &  # Run NAS backup in background
-  run_storagebox_backup &  # Run Storagebox backup in background
-  wait  # Wait for both to finish
-else
-  echo "Invalid argument. Usage: $0 {nas|storagebox|both}"
-  exit 1
-fi
+case ${1:-} in
+  nas|storagebox) sudo "$runner" "$1" ;;
+  # One after the other: the runner allows one run at a time.
+  both) sudo "$runner" storagebox nas ;;
+  *)
+    echo "Usage: $0 {nas|storagebox|both}"
+    exit 1
+    ;;
+esac

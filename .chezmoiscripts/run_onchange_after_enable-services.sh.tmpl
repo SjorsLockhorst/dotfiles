@@ -4,9 +4,10 @@
 # installed but off). Only starts them when systemd is running (not in Docker).
 set -euo pipefail
 
-services=(grub-btrfsd.service)
+# cronie: runs timeshift's hourly snapshot check (setup-timeshift).
+services=(grub-btrfsd.service cronie.service)
 {{ if .hyprland -}}
-# sddm: login screen. NetworkManager: wifi-menu/waybar-vpn. bluetooth: blueberry.
+# sddm: login screen. NetworkManager: nm-applet/waybar-vpn. bluetooth: blueberry.
 # docker.socket: waybar-docker/lazydocker (socket-activated, like this machine).
 services+=(sddm.service NetworkManager.service bluetooth.service power-profiles-daemon.service
     tailscaled.service docker.socket)

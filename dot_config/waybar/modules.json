@@ -122,6 +122,13 @@
         "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
         "on-click": "blueberry"
     },
+    "custom/backup": {
+        "format": "{}",
+        "return-type": "json",
+        "exec-if": "test -x /usr/local/bin/borg-backup-run",
+        "exec": "$HOME/.local/bin/waybar-backup",
+        "interval": 60
+    },
     "custom/updates": {
         "format": "{icon} {text}",
         "return-type": "json",
@@ -305,46 +312,6 @@
         "on-click": "$HOME/.local/bin/vpn-menu",
         "signal": 8
     },
-    "network": {
-        "interval": 5,
-        "format-icons": [
-            "󰤯",
-            "󰤟",
-            "󰤢",
-            "󰤥",
-            "󰤨"
-        ],
-        "format-wifi": "{icon}",
-        "format-ethernet": "󰈀",
-        "format-linked": "󰈀",
-        "format-disconnected": "󰤮",
-        "format-disabled": "󰤮",
-        "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
-        "tooltip-format-ethernet": "{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
-        "tooltip-format-disconnected": "Disconnected",
-        "on-click": "$HOME/.local/bin/wifi-menu",
-        "on-click-right": "nm-connection-editor"
-    },
-    "network#full": {
-        "interval": 5,
-        "format-icons": [
-            "󰤯",
-            "󰤟",
-            "󰤢",
-            "󰤥",
-            "󰤨"
-        ],
-        "format-wifi": "{icon} {essid}",
-        "format-ethernet": "󰈀 {ifname}",
-        "format-linked": "󰈀",
-        "format-disconnected": "󰤮",
-        "format-disabled": "󰤮",
-        "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
-        "tooltip-format-ethernet": "{ipaddr} on {ifname}\n󰇚 {bandwidthDownBytes}  󰕒 {bandwidthUpBytes}",
-        "tooltip-format-disconnected": "Disconnected",
-        "on-click": "$HOME/.local/bin/wifi-menu",
-        "on-click-right": "nm-connection-editor"
-    },
     "cpu#leader": {
         "format": "󰅁 󰍛",
         "interval": 3,
@@ -417,9 +384,9 @@
         "orientation": "inherit",
         "modules": [
             "tray",
-            "network",
             "custom/vpn",
             "bluetooth",
+            "custom/backup",
             "custom/updates",
             "custom/notification",
             "custom/power"
@@ -429,9 +396,9 @@
         "orientation": "inherit",
         "modules": [
             "tray",
-            "network#full",
             "custom/vpn#full",
             "bluetooth",
+            "custom/backup",
             "custom/updates",
             "custom/notification",
             "custom/power"
