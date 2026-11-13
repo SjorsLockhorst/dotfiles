@@ -1,0 +1,5 @@
+# The PAC that ./z tenant connect --pac renders. Read as a file so alpaca does not depend on the PAC
+# server being up; alpaca-pac-reload.path restarts alpaca when ./z rewrites it.
+PAC_URL=file://{{ .chezmoi.homeDir }}/.config/za/pac/proxy.pac
+LISTEN_ADDRESS=127.0.0.1
+LISTEN_PORT=3128

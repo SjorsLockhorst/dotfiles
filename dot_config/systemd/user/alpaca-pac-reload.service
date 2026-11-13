@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart alpaca to load the new PAC
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl --user try-restart alpaca.service

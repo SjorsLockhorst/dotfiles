@@ -17,6 +17,9 @@ now=()
 [[ -d /run/systemd/system ]] && now=(--now)
 sudo systemctl enable "${now[@]}" "${services[@]}"
 
+# alpaca (127.0.0.1:3128) is the browser's proxy; this reloads it when ./z tenant changes the PAC.
+systemctl --user enable "${now[@]}" alpaca.service alpaca-pac-reload.path
+
 {{ if .hyprland -}}
 # docker without sudo (waybar-docker, lazydocker); takes effect on next login
 sudo usermod -aG docker "$(id -un)"
