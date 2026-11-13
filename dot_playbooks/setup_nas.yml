@@ -1,320 +1,105 @@
-- name: Prepare and check NAS availability
+# Backups to the NAS (OpenMediaVault): a borg repo in the home folder of a NAS
+# user named after this machine, reachable only with this machine's backup key,
+# and only for `borg serve` on that repo. The user must exist already: create it
+# in the OMV web UI first (see README.md).
+#
+# Logs in to the NAS as nas_admin (default: you), with sudo (-K: the same
+# password as here). Override with -e nas_admin=<user>.
+
+- name: Backup key for the NAS
   hosts: localhost
-  gather_facts: yes
+  gather_facts: true
   vars:
-    #
-    # NOTE: If you get "Connection closed" errors, you may still need 
-    # the full path to borg here, e.g., /usr/bin/borg
-    #
-    authorized_keys_content: "command=\"borg serve --restrict-to-repository ~/repo\",restrict {{ lookup('file', tmp_ssh_key_path + '.pub') }}"
-    tmp_ssh_key_path: "/tmp/nas-backup"
+    nas_host: nas.home.lan
+    nas_admin: "{{ lookup('pipe', 'id -un') }}"
+    ssh_key: /home/borgbackup/.ssh/nas-backup
   tasks:
-    - name: Ping NAS to check if it's up
-      wait_for:
-        host: "nas.home.lan"
+    - name: The NAS is reachable
+      ansible.builtin.wait_for:
+        host: "{{ nas_host }}"
         port: 22
-        state: started
-        timeout: 30 # Adjust the timeout as necessary
-      delegate_to: localhost
+        timeout: 30
 
-    - name: Add NAS to dynamic inventory
-      add_host:
-        name: "nas.home.lan"
-        groups: "nas_group"
-        ansible_user: "sjors" # Admin user on NAS for setup
-        ansible_ssh_private_key_file: "/home/sjors/.ssh/id_rsa"
-        # This stores the control node's hostname to be used as the new username
-        # --- FIXED DEPRECATION ---
-        user_name: "{{ ansible_facts['hostname'] }}"
-        # --- FIX: Disables host key checking for Ansible's connection ---
-        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-
-    - name: Generate the ssh key to be used for backups
+    # Kept on a re-run: the NAS already trusts it.
+    - name: Backup key exists
       ansible.builtin.command:
-        # --- FIXED DEPRECATION ---
-        cmd: ssh-keygen -t ed25519 -f "{{ tmp_ssh_key_path }}" -N '' -C "{{ ansible_facts['hostname'] }}"
-      args:
-        creates: "{{ tmp_ssh_key_path }}"
+        argv: [ssh-keygen, -q, -t, ed25519, -N, "", -C, "borgbackup@{{ ansible_facts.hostname }}", -f, "{{ ssh_key }}"]
+        creates: "{{ ssh_key }}"
+      become: true
+      become_user: borgbackup
 
-    - name: Create the authorized_keys file content locally
-      ansible.builtin.lineinfile:
-        path: "authorized_keys" # Creates this file in the current directory
-        line: "{{ authorized_keys_content }}"
-        create: yes
-        mode: "0644"
-      delegate_to: localhost
-      run_once: true
+    - name: Read the backup key
+      ansible.builtin.slurp:
+        src: "{{ ssh_key }}.pub"
+      register: backup_pubkey
+      become: true
 
-#
-# ------------------ Setup User Play ------------------
-#
-- name: Setup user on NAS
+    - name: Add the NAS to the inventory
+      ansible.builtin.add_host:
+        name: "{{ nas_host }}"
+        groups: nas_group
+        ansible_user: "{{ nas_admin }}"
+        ansible_ssh_common_args: -o StrictHostKeyChecking=accept-new
+        backup_user: "{{ ansible_facts.hostname }}"
+        backup_pubkey: "{{ backup_pubkey.content | b64decode | trim }}"
+
+- name: Backup user on the NAS
   hosts: nas_group
-  gather_facts: no
+  gather_facts: false
   become: true
-  vars:
-    tmp_ssh_key_path: "/tmp/nas-backup"
-  pre_tasks:
-    - name: Set local variables for easy reference
-      set_fact:
-        user_name: "{{ hostvars['nas.home.lan']['user_name'] }}"
   tasks:
-#
-    # --- START REPLACEMENT ---
-    #
-    - name: Check if user '{{ user_name }}' exists on the NAS
+    - name: Look up the backup user
       ansible.builtin.getent:
         database: passwd
-        key: "{{ user_name }}"
-        fail_key: false # This is important: do not fail if the user is not found
+        key: "{{ backup_user }}"
+        fail_key: false
 
-    - name: Fail if user does not exist (must be created in OMV)
-      ansible.builtin.fail:
-        msg: >
-          User '{{ user_name }}' does not exist on the NAS.
-          
-          ACTION REQUIRED:
-          1. Log in to your OpenMediaVault web UI.
-          2. Go to 'Users' and create a new user with the name '{{ user_name }}'.
-          3. Ensure the user's shell is set (e.g., to '/bin/bash').
-          4. Add the user to the 'ssh' and 'sudo' groups.
-          5. Re-run this playbook.
-      when: >
-        ansible_facts.getent_passwd is not defined or
-        user_name not in ansible_facts.getent_passwd
+    - name: The backup user exists (created in OMV)
+      ansible.builtin.assert:
+        that: ansible_facts.getent_passwd[backup_user] | default(none) is not none
+        quiet: true
+        fail_msg: >-
+          User '{{ backup_user }}' does not exist on the NAS. Create it in the
+          OpenMediaVault web UI (Users), in groups users and ssh, then run this
+          playbook again.
 
-    - name: Set user_info fact from existing user
+    - name: Set the backup user's home folder
       ansible.builtin.set_fact:
-        user_info:
-          # The home directory is the 5th item (index 4) in the passwd entry
-          home: "{{ ansible_facts.getent_passwd[user_name][4] }}"
-      when: >
-        ansible_facts.getent_passwd is defined and
-        user_name in ansible_facts.getent_passwd
+        backup_home: "{{ ansible_facts.getent_passwd[backup_user][4] }}"
 
-    - name: Add user to sudoers with no password
-      lineinfile:
-        dest: /etc/sudoers
-        line: "{{ user_name }} ALL=(ALL) NOPASSWD: ALL"
-        validate: 'visudo -cf %s'
-
-    - name: Create a repo directory in the user's home directory
-      file:
-        path: "{{ user_info.home }}/repo"  # <-- DYNAMIC: Use registered home dir
-        state: directory
-        owner: "{{ user_name }}"
-        group: 'users'
-        mode: '0755'
-
-    - name: Create .ssh directory in the user's home directory
-      file:
-        path: "{{ user_info.home }}/.ssh" # <-- DYNAMIC: Use registered home dir
-        state: directory
-        owner: "{{ user_name }}"
-        group: 'users'
-        mode: '0700'
-
-    - name: Copy the authorized_keys to the user's .ssh directory on NAS
-      ansible.builtin.copy:
-        src: "authorized_keys" # Copies from control node CWD
-        dest: "{{ user_info.home }}/.ssh/authorized_keys" # <-- DYNAMIC: Use registered home dir
-        owner: "{{ user_name }}"
-        group: 'users'
-        mode: '0600'
-
-#
-# ------------------ Local Key Management Play ------------------
-#
-- name: Local moving of keys
-  hosts: localhost
-  gather_facts: no
-  become: true
-  vars:
-    tmp_ssh_key_path: "/tmp/nas-backup"
-    ssh_key_path: "/home/borgbackup/.ssh/nas-backup"
-  tasks:
-    - name: Move the SSH private key to borgbackup's .ssh directory
-      ansible.builtin.copy:
-        src: "{{ tmp_ssh_key_path }}"
-        dest: "{{ ssh_key_path }}"
-        owner: borgbackup
-        group: borgbackup
-        mode: '0600'
-        remote_src: yes # Use remote_src for local-to-local copy with become
-      become: true
-      become_user: root
-
-    - name: Move the SSH public key to borgbackup's .ssh directory
-      ansible.builtin.copy:
-        src: "{{ tmp_ssh_key_path }}.pub"
-        dest: "{{ ssh_key_path }}.pub"
-        owner: borgbackup
-        group: borgbackup
-        mode: '0644'
-        remote_src: yes # Use remote_src for local-to-local copy with become
-      become: true
-      become_user: root
-
-    - name: Remove the temporary authorized_keys file locally
-      ansible.builtin.file:
-        path: "authorized_keys"
+    # Earlier versions of this playbook gave the user passwordless sudo.
+    - name: The backup user has no passwordless sudo
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        line: "{{ backup_user }} ALL=(ALL) NOPASSWD: ALL"
         state: absent
-      run_once: true
+        validate: visudo -cf %s
 
-#
-# ------------------ Borg Init Play ------------------
-#
-- name: Init borg
-  hosts: localhost
-  gather_facts: yes
-  become: true
-  become_user: borgbackup
-  vars:
-    # --- FIXED DEPRECATION ---
-    repo_url: "ssh://{{ ansible_facts['hostname'] }}@nas.home.lan/./repo"
-    ssh_key_path: "/home/borgbackup/.ssh/nas-backup"
-    backup_script_path: "/home/borgbackup/backup_nas.sh"
-    env_file_path: "/home/borgbackup/targets/nas"
-  
-  # --- FIX: Sets environment for ALL tasks in this play ---
-  # Also disables host key checking for borg's SSH connections
-  environment:
-      BORG_RSH: "ssh -i {{ ssh_key_path }} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-      BORG_REPO: "{{ repo_url }}"
-  
-  tasks:
-    - name: Prompt for the Borg passphrase
-      pause:
-        prompt: "Enter the Borg passphrase"
-      register: passphrase_prompt
-      no_log: true  # Prevents logging of sensitive information
+    - name: .ssh folder of the backup user
+      ansible.builtin.file:
+        path: "{{ backup_home }}/.ssh"
+        state: directory
+        owner: "{{ backup_user }}"
+        group: users
+        mode: "0700"
 
-    - name: Set the Borg passphrase from prompt
-      set_fact:
-        borg_passphrase: "{{ passphrase_prompt.user_input }}"
-      when: passphrase_prompt is defined and passphrase_prompt.user_input is defined
-
-    - name: Add configuration to storagebox file
-      block:
-        - name: Add configuration to storagebox file
-          ansible.builtin.copy:
-            dest: "{{ env_file_path }}"
-            content: |
-              # --- FIX: Disables host key checking for the script's SSH ---
-              export BORG_RSH="ssh -i {{ ssh_key_path }} -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-              export BORG_PASSPHRASE="{{ borg_passphrase }}"
-              export BORG_REPO="{{ repo_url }}"
-            owner: borgbackup
-            group: borgbackup
-            mode: '0600' # Changed to 0600 for security
-      no_log: true # Hide the content of this task from logs
-      become: true
-      become_user: borgbackup
-
-    - name: Check if Borg repository exists
-      ansible.builtin.command:
-        cmd: "borg info"
-      # Environment is inherited from the play; only add what's new
-      environment:
-        BORG_PASSPHRASE: "{{ borg_passphrase }}"
-      register: repo_check
-      ignore_errors: true
-
-    - name: Initialize Borg repository with repokey-blake2 encryption, if not exists
-      ansible.builtin.command:
-        cmd: "borg init --encryption=repokey-blake2"
-      # Environment is inherited from the play; only add what's new
-      environment:
-        BORG_PASSPHRASE: "{{ borg_passphrase }}"
-      when: repo_check.failed
-
-    - name: Check if the file exists
-      ansible.builtin.stat:
-        path: "{{ backup_script_path }}"
-      register: backup_script_stat
-
-    - name: Add script for backups storagebox file
+    # The only key, and it can only run borg serve on ~/repo.
+    - name: authorized_keys of the backup user
       ansible.builtin.copy:
-        dest: "{{ backup_script_path }}"
+        dest: "{{ backup_home }}/.ssh/authorized_keys"
         content: |
-          #!/bin/sh
-          . "{{ env_file_path }}"
+          command="borg serve --restrict-to-repository ~/repo",restrict {{ backup_pubkey }}
+        owner: "{{ backup_user }}"
+        group: users
+        mode: "0600"
 
-          # some helpers and error handling:
-          info() { printf "\n%s %s\n\n" "$( date )" "$*" >&2; }
-          trap 'echo $( date ) Backup interrupted >&2; exit 2' INT TERM
-
-          info "Starting backup"
-
-          # Backup the most important directories into an archive named after
-          # the machine this script is currently running on:
-
-          borg create                       \
-                --verbose                   \
-                --filter AME                \
-                --list                      \
-                --stats                     \
-                --progress                  \
-                --show-rc                   \
-                --compression lz4           \
-                --exclude-caches            \
-                --exclude 'home/*/.cache/*'   \
-                --exclude 'var/tmp/*'         \
-                --exclude '*/site-packages/**/*'\
-                --exclude '*/node_modules/**/*' \
-                --exclude '*/miniconda3/**/*'   \
-                                          \
-                ::'{hostname}-{now}'        \
-                /home                       \
-                /timeshift                  \
-
-          backup_exit=$?
-
-          info "Pruning repository"
-
-          # Use the `prune` subcommand to maintain 7 daily, 4 weekly and 6 monthly
-          # archives of THIS machine. The '{hostname}-*' matching is very important to
-          # limit prune's operation to this machine's archives and not apply to
-          # other machines' archives also:
-
-          borg prune                        \
-                --list                      \
-                --glob-archives '{hostname}-*' \
-                --show-rc                   \
-                --keep-daily    7           \
-                --keep-weekly   4           \
-                --keep-monthly  6
-
-          prune_exit=$?
-
-          # actually free repo disk space by compacting segments
-
-          info "Compacting repository"
-
-          borg compact
-
-          compact_exit=$?
-
-          # use highest exit code as global exit code
-          global_exit=$(( backup_exit > prune_exit ? backup_exit : prune_exit ))
-          global_exit=$(( compact_exit > global_exit ? compact_exit : global_exit ))
-
-          if [ ${global_exit} -eq 0 ]; then
-              info "Backup, Prune, and Compact finished successfully"
-          elif [ ${global_exit} -eq 1 ]; then
-              info "Backup, Prune, and/or Compact finished with warnings"
-          else
-              info "Backup, Prune, and/or Compact finished with errors"
-          fi
-
-          exit ${global_exit}
-        owner: borgbackup
-        group: borgbackup
-        mode: '0755'
-      become: true
-      become_user: borgbackup
-      when: not backup_script_stat.stat.exists
-
-    - name: Borg repo is set up!
-      ansible.builtin.debug:
-        msg: "Borg repo is set up! "
+- name: Borg repo on the NAS
+  hosts: localhost
+  gather_facts: true
+  tasks:
+    - name: Repo, settings and backup script
+      ansible.builtin.include_tasks: tasks/borg_repo.yml
+      vars:
+        target: nas
+        repo_url: "ssh://{{ ansible_facts.hostname }}@nas.home.lan/./repo"
+        ssh_key: /home/borgbackup/.ssh/nas-backup

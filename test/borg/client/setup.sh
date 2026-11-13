@@ -1,18 +1,22 @@
 #!/bin/bash
 # Runs in the client as sjors: the README's steps, in order, the way you'd run
 # them by hand. The playbooks are copied to ~/.playbooks like chezmoi deploys
-# them (and run from there: they write a temporary authorized_keys there).
-# Each playbook's output and exit status go to /out/<pass>-<playbook>.{log,status}.
+# them. Each playbook's output and exit status go to
+# /out/<pass>-<playbook>.{log,status}.
 #
-# Usage: setup.sh <pass>   (a label, e.g. "first" or "second" for a re-run)
+# Usage: setup.sh <pass> [playbooks-dir] [passphrase]
+#   pass         a label for the logs, e.g. "first" or "second"
+#   playbooks    default /src/dot_playbooks (the working tree)
+#   passphrase   what to type when asked for the borg passphrase
 set -uo pipefail
 
 pass=$1
+playbooks=${2:-/src/dot_playbooks}
+passphrase=${3:-borg-test-passphrase}
 password=test
-passphrase=borg-test-passphrase
 
 rm -rf ~/.playbooks
-cp -r /src/dot_playbooks ~/.playbooks
+cp -r "$playbooks" ~/.playbooks
 cd ~/.playbooks
 
 # The README's storagebox env vars (main account, sub-account number).

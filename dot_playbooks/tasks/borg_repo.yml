@@ -1,0 +1,123 @@
+# The borg side of a backup target, shared by setup_nas.yml and
+# setup_storagebox.yml. Runs on localhost with become.
+#
+# Needs: target   (nas / storagebox: names the settings file and script)
+#        repo_url (ssh://user@host[:port]/./repo)
+#        ssh_key  (the backup key, in /home/borgbackup/.ssh)
+#
+# A re-run keeps the passphrase from the target's settings file, so it can't
+# be replaced by a typo. A new passphrase is asked twice, and checked against
+# the repo before it's saved.
+
+- name: "{{ target }}: settings for the backups"
+  ansible.builtin.set_fact:
+    settings_file: "/home/borgbackup/targets/{{ target }}"
+    # One known_hosts for setup (as borgbackup) and the backups (as root).
+    borg_rsh: >-
+      ssh -i {{ ssh_key }} -o StrictHostKeyChecking=accept-new
+      -o UserKnownHostsFile=/home/borgbackup/.ssh/known_hosts
+
+- name: "{{ target }}: look for earlier settings"
+  ansible.builtin.stat:
+    path: "{{ settings_file }}"
+  register: settings_stat
+  become: true
+
+- name: "{{ target }}: reuse the saved passphrase"
+  when: settings_stat.stat.exists
+  become: true
+  block:
+    - name: "{{ target }}: read the saved passphrase"
+      ansible.builtin.command:
+        argv: [bash, -c, '. "$0" && printf %s "$BORG_PASSPHRASE"', "{{ settings_file }}"]
+      register: saved_passphrase
+      changed_when: false
+      no_log: true
+
+    - name: "{{ target }}: use the saved passphrase"
+      ansible.builtin.set_fact:
+        borg_passphrase: "{{ saved_passphrase.stdout }}"
+      no_log: true
+
+- name: "{{ target }}: ask for the passphrase"
+  when: not settings_stat.stat.exists
+  block:
+    - name: "{{ target }}: ask for the passphrase"
+      ansible.builtin.pause:
+        prompt: "Enter the Borg passphrase for {{ target }} (the existing one if the repo exists already)"
+        echo: false
+      register: passphrase_1
+      no_log: true
+
+    - name: "{{ target }}: ask for the passphrase again"
+      ansible.builtin.pause:
+        prompt: "Repeat the Borg passphrase for {{ target }}"
+        echo: false
+      register: passphrase_2
+      no_log: true
+
+    - name: "{{ target }}: check the passphrase"
+      ansible.builtin.assert:
+        that:
+          - passphrase_1.user_input == passphrase_2.user_input
+          - passphrase_1.user_input | length > 0
+        fail_msg: The passphrases differ or are empty. Run the playbook again.
+        quiet: true
+      no_log: true
+
+    - name: "{{ target }}: use the new passphrase"
+      ansible.builtin.set_fact:
+        borg_passphrase: "{{ passphrase_1.user_input }}"
+      no_log: true
+
+# A missing repo is fine (it's created next), anything else stops here: a
+# wrong passphrase, or the host refusing the key.
+- name: "{{ target }}: check the repo"
+  ansible.builtin.command:
+    cmd: borg info
+  environment: &borg_env
+    BORG_RSH: "{{ borg_rsh }}"
+    BORG_REPO: "{{ repo_url }}"
+    BORG_PASSPHRASE: "{{ borg_passphrase }}"
+  become: true
+  become_user: borgbackup
+  register: repo_info
+  changed_when: false
+  failed_when: >-
+    repo_info.rc != 0 and not
+    ('does not exist' in repo_info.stderr or 'is not a valid repository' in repo_info.stderr)
+
+- name: "{{ target }}: create the repo"
+  ansible.builtin.command:
+    cmd: borg init --encryption=repokey-blake2
+  environment: *borg_env
+  become: true
+  become_user: borgbackup
+  when: repo_info.rc != 0
+
+- name: "{{ target }}: save the settings"
+  ansible.builtin.copy:
+    dest: "{{ settings_file }}"
+    content: |
+      export BORG_RSH={{ borg_rsh | quote }}
+      export BORG_PASSPHRASE={{ borg_passphrase | quote }}
+      export BORG_REPO={{ repo_url | quote }}
+    owner: borgbackup
+    group: borgbackup
+    mode: "0600"
+  become: true
+  no_log: true
+
+# Always written, so changes here reach machines set up earlier.
+- name: "{{ target }}: backup script (run by borg-backup-run)"
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: "/home/borgbackup/backup_{{ target }}.sh"
+    owner: borgbackup
+    group: borgbackup
+    mode: "0755"
+  become: true
+
+- name: "{{ target }}: done"
+  ansible.builtin.debug:
+    msg: "{{ target }} is set up: {{ repo_url }}. Back up now with: run_backup {{ target }}"

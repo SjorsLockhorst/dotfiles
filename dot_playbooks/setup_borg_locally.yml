@@ -1,44 +1,38 @@
+# The local side: the borgbackup user, which holds the backup keys and each
+# target's settings. The backups themselves run as root (borg-backup-run, from
+# chezmoi), so this user needs no sudo.
 - name: Setup borg locally
   hosts: localhost
-  gather_facts: true
+  gather_facts: false
+  become: true
 
   tasks:
+    - name: Borg is installed
+      ansible.builtin.command:
+        cmd: borg --version
+      changed_when: false
+
     - name: Add borgbackup user
-      user:
+      ansible.builtin.user:
         name: borgbackup
-        createhome: yes
+        create_home: true
         state: present
-      become: true
 
-    - name: Add sudoers file for borgbackup user
-      copy:
-        dest: /etc/sudoers.d/borgbackup
-        content: "borgbackup ALL=(ALL) NOPASSWD: ALL"
-        validate: 'visudo -cf %s'
-      become: true
-
-    - name: Ensure .ssh directory exists for borgbackup user
+    # Earlier versions of this playbook gave it full passwordless sudo.
+    - name: borgbackup has no sudo
       ansible.builtin.file:
-        path: "/home/borgbackup/.ssh"
+        path: /etc/sudoers.d/borgbackup
+        state: absent
+
+    - name: Folders for the backup keys and target settings
+      ansible.builtin.file:
+        path: "/home/borgbackup/{{ item }}"
         state: directory
         owner: borgbackup
         group: borgbackup
-        mode: '0700'
-      delegate_to: localhost
-      run_once: true
-      become: true
+        mode: "0700"
+      loop: [.ssh, targets]
 
-    - name: Ensure targets directory exists for borgbackup user
-      ansible.builtin.file:
-        path: "/home/borgbackup/targets"
-        state: directory
-        owner: borgbackup
-        group: borgbackup
-        mode: '0700'
-      delegate_to: localhost
-      run_once: true
-      become: true
-
-    - name: Borg is installed locally
+    - name: Next steps
       ansible.builtin.debug:
-        msg: "Borg repo is setup and installed locally! Run `ansible-playbook ~/.playbooks/setup_(nas|storagebox).yml` to auto setup repo's there.'"
+        msg: "Borg is set up locally! Now run ansible-playbook ~/.playbooks/setup_nas.yml -K and/or setup_storagebox.yml -K"

@@ -120,9 +120,14 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   is installed. `run_backup` goes through the runner, so manual runs update the status too.
 
 ## Testing the borg playbooks (Docker mocks)
-- `test/borg/run.sh [--keep]` (~3 min after the first build) runs the 3 playbooks unchanged on an Arch
+- `test/borg/run.sh [--keep]` (~6 min after the first build) runs the 3 playbooks unchanged on an Arch
   client against a mock NAS and a mock Hetzner storage box, then backups through the real
-  `borg-backup-run`: fresh setup + tests, a re-run + tests, then the NAS stopped. Logs: `test/out/borg/`.
+  `borg-backup-run`. Scenario "fresh": setup + tests, a re-run + tests, then the NAS stopped.
+  Scenario "upgrade": setup with the playbooks of `OLD_REV` (how the laptop was set up) + a backup,
+  then the current ones + tests. Re-runs type a wrong passphrase: the saved one must be kept.
+  Logs: `test/out/borg/`.
+- Playbook layout: the per-target borg steps (passphrase, repo check/init, settings, backup script
+  from `templates/backup.sh.j2`) are shared in `dot_playbooks/tasks/borg_repo.yml`.
 - The mocks copy the real machines, read by `test/borg/probe-nas.sh` / `probe-storagebox.sh`
   (read-only, run them by hand). Re-probe and update the mocks when the NAS (OMV 6, Debian 11) is upgraded.
 - The compose network is `internal`: otherwise a stopped mock's name resolves to the REAL machine

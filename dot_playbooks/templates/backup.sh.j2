@@ -1,0 +1,61 @@
+#!/bin/sh
+# Backup to {{ target }}. Written by ~/.playbooks/setup_{{ target }}.yml (edit it
+# there, a re-run overwrites this). Run as root by borg-backup-run.
+. /home/borgbackup/targets/{{ target }}
+
+info() { printf "\n%s %s\n\n" "$(date)" "$*" >&2; }
+trap 'echo $(date) Backup interrupted >&2; exit 2' INT TERM
+
+info "Starting backup"
+
+# Archives are named after this machine.
+borg create                             \
+    --verbose                           \
+    --filter AME                        \
+    --list                              \
+    --stats                             \
+    --show-rc                           \
+    --compression lz4                   \
+    --exclude-caches                    \
+    --exclude 'home/*/.cache/*'         \
+    --exclude 'var/tmp/*'               \
+    --exclude '*/site-packages/**/*'    \
+    --exclude '*/node_modules/**/*'     \
+    --exclude '*/miniconda3/**/*'       \
+    ::'{hostname}-{now}'                \
+    /home
+
+backup_exit=$?
+
+info "Pruning repository"
+
+# Keep 7 daily, 4 weekly and 6 monthly archives of THIS machine only (the
+# '{hostname}-*' match leaves other machines' archives alone).
+borg prune                              \
+    --list                              \
+    --glob-archives '{hostname}-*'      \
+    --show-rc                           \
+    --keep-daily    7                   \
+    --keep-weekly   4                   \
+    --keep-monthly  6
+
+prune_exit=$?
+
+# Actually free the space of pruned archives.
+info "Compacting repository"
+borg compact
+compact_exit=$?
+
+# The highest exit code wins: 0 ok, 1 warnings, 2+ errors.
+global_exit=$(( backup_exit > prune_exit ? backup_exit : prune_exit ))
+global_exit=$(( compact_exit > global_exit ? compact_exit : global_exit ))
+
+if [ ${global_exit} -eq 0 ]; then
+    info "Backup, Prune, and Compact finished successfully"
+elif [ ${global_exit} -eq 1 ]; then
+    info "Backup, Prune, and/or Compact finished with warnings"
+else
+    info "Backup, Prune, and/or Compact finished with errors"
+fi
+
+exit ${global_exit}
