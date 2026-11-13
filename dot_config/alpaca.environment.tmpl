@@ -1,5 +1,6 @@
-# The PAC that ./z tenant connect --pac renders. Read as a file so alpaca does not depend on the PAC
-# server being up; alpaca-pac-reload.path restarts alpaca when ./z rewrites it.
-PAC_URL=file://{{ .chezmoi.homeDir }}/.config/za/pac/proxy.pac
+# Empty: alpaca takes the PAC URL from gsettings org.gnome.system.proxy autoconfig-url and re-reads it on
+# every request. alpaca-pac-reload.path bumps that URL when ./z tenant rewrites the PAC, so alpaca reloads
+# in place; restarting alpaca would cut the SSM session the tunnel itself runs through it.
+PAC_URL=
 LISTEN_ADDRESS=127.0.0.1
 LISTEN_PORT=3128

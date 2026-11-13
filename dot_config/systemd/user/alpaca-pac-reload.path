@@ -1,5 +1,5 @@
 [Unit]
-Description=Restart alpaca when ./z tenant rewrites its PAC
+Description=Reload alpaca when ./z tenant rewrites its PAC
 
 [Path]
 # alpaca on Linux re-downloads the PAC only when the network addresses change.

@@ -1,6 +1,7 @@
 [Unit]
-Description=Restart alpaca to load the new PAC
+Description=Point alpaca at the new PAC
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/systemctl --user try-restart alpaca.service
+# A new ?v= is what makes alpaca re-download; the PAC server ignores the query.
+ExecStart=/bin/sh -c 'gsettings set org.gnome.system.proxy autoconfig-url "http://127.0.0.1:8000/proxy.pac?v=$$(date +%%s%%N)"'
