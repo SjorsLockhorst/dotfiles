@@ -1,0 +1,27 @@
+#!/usr/bin/expect -f
+# Run a command like a person at the keyboard: in a terminal, answering the
+# prompts the playbooks ask. (Piped answers don't work: ansible's `pause` then
+# silently continues with an empty answer.)
+#
+# Usage: drive.exp <sudo-password> <borg-passphrase> <command> [args...]
+# Exits with the command's exit status; 124 if it waits for something unknown.
+
+set timeout 180
+lassign $argv become passphrase
+spawn {*}[lrange $argv 2 end]
+
+# (No comments inside the expect block: Tcl would read them as patterns.)
+# ansible's pause prints its prompt followed by a line break, and discards
+# input typed ahead just after it: hence the short wait before answering.
+expect {
+    -re {BECOME password: ?$} { send -- "$become\r"; exp_continue }
+    -re {Enter the Borg passphrase[^\n]*:\s*$} { sleep 1; send -- "$passphrase\r"; exp_continue }
+    -re {continue connecting \(yes/no[^)]*\)\? ?$} { send -- "yes\r"; exp_continue }
+    timeout {
+        puts "\n*** drive.exp: no output for $timeout s, an unanswered prompt?"
+        exit 124
+    }
+    eof
+}
+lassign [wait] pid spawn_id os_error status
+exit $status

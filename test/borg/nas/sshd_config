@@ -1,0 +1,13 @@
+# As `sshd -T` shows on the real NAS (OMV-managed).
+Port 22
+UsePAM yes
+PermitRootLogin yes
+PubkeyAuthentication yes
+PasswordAuthentication yes
+ChallengeResponseAuthentication no
+StrictModes yes
+AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2 /var/lib/openmediavault/ssh/authorized_keys/%u
+AllowGroups root ssh
+Subsystem sftp /usr/lib/openssh/sftp-server
+PrintMotd no
+AcceptEnv LANG LC_*

@@ -1,0 +1,67 @@
+#!/bin/bash
+# Mock of the Hetzner storage box shell, modelled on a real box (see
+# test/borg/probe-storagebox.sh): a fixed set of commands, no shell features,
+# but `a && b` works. sshd runs it as the login shell, `restricted-shell -c
+# "<command>"`, also for a command="..." forced by authorized_keys.
+
+not_found() {
+    echo "Command not found. Use 'help' to get a list of available commands."
+    exit 8
+}
+
+help_text() {
+    cat <<'EOF'
++------------------------------------------------------------------------------+
+| The following commands are available (storage box MOCK):                     |
+|   ls|ll tree cd pwd mkdir rmdir du df dd cat touch cp rm unlink mv chmod      |
+|   md5|sha1|sha256|sha512 md5sum|sha1sum|sha256sum|sha512sum                   |
+|   head tail grep stat version                                                |
+|                                                                              |
+| Available as server side backend:                                            |
+|   borg  rsync  scp  sftp                                                     |
++------------------------------------------------------------------------------+
+EOF
+}
+
+# run_one <command> [args...]: one command from the allowed set.
+run_one() {
+    case $1 in
+        ls|tree|cd|pwd|mkdir|rmdir|du|df|dd|cat|touch|cp|rm|unlink|mv|chmod|head|tail|grep|stat|md5sum|sha1sum|sha256sum|sha512sum)
+            "$@" ;;
+        ll) shift; ls -l "$@" ;;
+        md5|sha1|sha256|sha512) local c=${1}sum; shift; "$c" "$@" ;;
+        help) help_text; return 1 ;;  # the real one exits 1 too
+        version) printf 'Platform: Linux\nVersion: 2.2.5 (mock)\n' ;;
+        *) not_found ;;
+    esac
+}
+
+[[ ${1:-} == -c ]] || { echo "Interactive shell is not part of this mock." >&2; exit 1; }
+cmd=$2
+read -ra words <<<"$cmd"
+
+# Server side backends: run as they are.
+case ${words[0]:-} in
+    borg|borg-1.*)
+        [[ ${words[1]:-} == serve ]] || not_found
+        exec /usr/bin/borg "${words[@]:1}" ;;
+    rsync)
+        [[ ${words[1]:-} == --server ]] || not_found
+        exec "${words[@]}" ;;
+    scp)
+        exec "${words[@]}" ;;
+esac
+
+# No shell features: no `;`, pipes, redirects, substitutions, quotes.
+[[ $cmd == *[\;\|\<\>\$\`\'\"]* ]] && not_found
+
+# `a && b && c`, stopping at the first failure.
+rest=$cmd
+while :; do
+    part=${rest%%&&*}
+    read -ra words <<<"$part"
+    [[ ${#words[@]} -gt 0 ]] || not_found
+    run_one "${words[@]}" || exit $?
+    [[ $rest == *'&&'* ]] || break
+    rest=${rest#*&&}
+done

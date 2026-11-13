@@ -7,7 +7,6 @@
       user:
         name: borgbackup
         createhome: yes
-        append: yes
         state: present
       become: true
 

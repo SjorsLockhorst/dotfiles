@@ -119,6 +119,21 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   `waybar-backup` (`custom/backup`, next to updates) reads it. Hidden via `exec-if` until the runner
   is installed. `run_backup` goes through the runner, so manual runs update the status too.
 
+## Testing the borg playbooks (Docker mocks)
+- `test/borg/run.sh [--keep]` (~3 min after the first build) runs the 3 playbooks unchanged on an Arch
+  client against a mock NAS and a mock Hetzner storage box, then backups through the real
+  `borg-backup-run`: fresh setup + tests, a re-run + tests, then the NAS stopped. Logs: `test/out/borg/`.
+- The mocks copy the real machines, read by `test/borg/probe-nas.sh` / `probe-storagebox.sh`
+  (read-only, run them by hand). Re-probe and update the mocks when the NAS (OMV 6, Debian 11) is upgraded.
+- The compose network is `internal`: otherwise a stopped mock's name resolves to the REAL machine
+  (`nas.home.lan` did, once).
+- Prompts are answered by `client/drive.exp` in a pty. Piped stdin makes ansible's `pause` continue
+  with an EMPTY answer (an empty borg passphrase). `pause` also drops input typed right after its
+  prompt. No `#` comments inside a Tcl `expect { }` block: they're read as patterns.
+- Storage box: sub-account = its own container (and hostname) with `backups/<host>` mounted as `/home`.
+  The real box accepts a 666 `authorized_keys` (mock: `StrictModes no`); `;` fails but `&&` works.
+  Not confirmed on the real box yet: whether it enforces `command=` in `authorized_keys`.
+
 ## Snapshots (timeshift)
 - Daily snapshots (keep 5): `run_onchange_after_setup-timeshift.sh.tmpl` writes
   `/etc/timeshift/timeshift.json` and `/etc/cron.d/timeshift-hourly` exactly as the GUI's setup does,

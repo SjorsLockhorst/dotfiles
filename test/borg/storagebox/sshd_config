@@ -1,0 +1,21 @@
+# Storage box mock. Port 23: the restricted shell (and borg/rsync/scp/sftp).
+# Port 22: SFTP/SCP only, no shell.
+Port 22
+Port 23
+
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+UsePAM no
+PrintMotd no
+AuthorizedKeysFile .ssh/authorized_keys
+
+# The real box accepts the world-writable authorized_keys (mode 666) that
+# setup_storagebox.yml uploads; stock OpenSSH would refuse it.
+StrictModes no
+
+Subsystem sftp internal-sftp
+
+Match LocalPort 22
+    ForceCommand internal-sftp

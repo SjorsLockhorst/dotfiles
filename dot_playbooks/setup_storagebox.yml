@@ -36,7 +36,7 @@
 
     - name: Create directories for the new backup device
       ansible.builtin.command:
-        cmd: ssh -p {{ storagebox_port }} {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }} 'mkdir -p backups/{{ ansible_hostname }}/repo'
+        cmd: ssh -o StrictHostKeyChecking=accept-new -p {{ storagebox_port }} {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }} 'mkdir -p backups/{{ ansible_hostname }}/repo'
 
 
     - name: Generate the ssh key to be used for backups
@@ -56,11 +56,11 @@
 
     - name: Create .ssh directory for new repo
       ansible.builtin.command:
-        cmd: ssh -p {{ storagebox_port }} {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }} 'mkdir -p /home/backups/{{ ansible_hostname }}/.ssh'
+        cmd: ssh -o StrictHostKeyChecking=accept-new -p {{ storagebox_port }} {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }} 'mkdir -p /home/backups/{{ ansible_hostname }}/.ssh'
 
     - name: Upload authorized_keys to correct file
       ansible.builtin.command:
-        cmd: scp authorized_keys {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }}:backups/{{ ansible_hostname }}/.ssh/authorized_keys
+        cmd: scp -o StrictHostKeyChecking=accept-new authorized_keys {{ storagebox_user }}@{{ storagebox_user }}{{ storagebox_domain }}:backups/{{ ansible_hostname }}/.ssh/authorized_keys
 
 
     - name: Remove authorized_keys
@@ -132,7 +132,7 @@
       ansible.builtin.copy:
         dest: "/home/borgbackup/targets/storagebox"
         content: |
-          export BORG_RSH="ssh -i /home/borgbackup/.ssh/storagebox-backup"
+          export BORG_RSH="ssh -i /home/borgbackup/.ssh/storagebox-backup -o StrictHostKeyChecking=accept-new"
           export BORG_PASSPHRASE="{{ borg_passphrase }}"
           export BORG_REPO="{{ repo_url }}"
         owner: borgbackup
@@ -145,7 +145,7 @@
       ansible.builtin.command:
         cmd: "borg info"
       environment:
-        BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup"
+        BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup -o StrictHostKeyChecking=accept-new"
         BORG_PASSPHRASE: "{{ borg_passphrase }}"
         BORG_REPO: "{{ repo_url }}"
       register: repo_check
@@ -157,7 +157,7 @@
       ansible.builtin.command:
         cmd: "borg init --encryption=repokey-blake2"
       environment:
-        BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup"
+        BORG_RSH: "ssh -i /home/borgbackup/.ssh/storagebox-backup -o StrictHostKeyChecking=accept-new"
         BORG_PASSPHRASE: "{{ borg_passphrase }}"
         BORG_REPO: "{{ repo_url }}"
       when: repo_check.failed

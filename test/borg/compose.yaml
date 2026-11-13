@@ -1,0 +1,62 @@
+# Mock NAS and Hetzner storage box, plus a client (the laptop) to run the borg
+# playbooks against them. Started by test/borg/run.sh, which sets KEYS_DIR and
+# OUT_DIR. Hostnames are the real ones, so the playbooks run unchanged.
+name: borg-test
+
+x-build: &build
+  network: host   # package downloads (Tailscale DNS isn't reachable from the bridge)
+
+x-sshd-healthy: &sshd-healthy
+  test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/22"]
+  interval: 1s
+  retries: 30
+
+services:
+  client:
+    build: { context: client, <<: *build }
+    hostname: framework-arch
+    volumes:
+      - ../..:/src:ro
+      - ${KEYS_DIR}:/keys:ro
+      - ${OUT_DIR}:/out
+
+  nas:
+    build: { context: nas, <<: *build }
+    hostname: nas
+    networks: { default: { aliases: [nas.home.lan] } }
+    volumes: ["${KEYS_DIR}:/keys:ro"]
+    healthcheck: *sshd-healthy
+
+  storagebox:
+    build: { context: storagebox, <<: *build }
+    image: borg-test-storagebox
+    networks: { default: { aliases: [u123456.your-storagebox.de] } }
+    environment: { BOX_USER: u123456, MACHINE: framework-arch }
+    volumes: ["box:/home", "${KEYS_DIR}:/keys:ro"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "test -d /home/backups/framework-arch && </dev/tcp/127.0.0.1/23"]
+      interval: 1s
+      retries: 30
+
+  # The sub-account: its own hostname, seeing only backups/<machine> as /home.
+  storagebox-sub:
+    image: borg-test-storagebox
+    networks: { default: { aliases: [u123456-sub1.your-storagebox.de] } }
+    environment: { BOX_USER: u123456-sub1 }
+    volumes:
+      - type: volume
+        source: box
+        target: /home
+        volume: { subpath: backups/framework-arch }
+    depends_on: { storagebox: { condition: service_healthy } }
+    healthcheck: *sshd-healthy
+
+volumes:
+  box:
+
+# No way out: the mock names must never reach the real machines. Without this,
+# a stopped mock's name (nas.home.lan) resolves via the host's DNS to the real
+# NAS. Image builds still download over the host network (x-build).
+networks:
+  default:
+    internal: true
