@@ -3,6 +3,8 @@ util/
 key.txt.age
 # System config, applied by system-apply (Ansible), not a dotfile
 system/
+# The Arch base install, run from the ISO before chezmoi exists
+install/
 
 {{ if (not .plasma_i3) -}}
 .xsessionrc

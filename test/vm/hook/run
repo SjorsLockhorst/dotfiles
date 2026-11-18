@@ -1,0 +1,16 @@
+#!/bin/bash
+# Test-only, run in the new system by install.sh --post-install: what the VM
+# test needs and the laptop doesn't get. sshd with the test key, sudo without
+# a password (as in test/Dockerfile), bats for the tests, and a nameserver
+# that answers (QEMU's DNS forwarder only tries the host's first one).
+set -euo pipefail
+user=$1
+
+printf '[global-dns-domain-*]\nservers=%s\n' "$(cat dns)" >/etc/NetworkManager/conf.d/90-vm-test-dns.conf
+
+pacman -S --noconfirm --needed openssh bats
+systemctl enable sshd
+install -d -m 700 -o "$user" -g "$user" "/home/$user/.ssh"
+install -m 600 -o "$user" -g "$user" test-key.pub "/home/$user/.ssh/authorized_keys"
+echo "$user ALL=(ALL:ALL) NOPASSWD: ALL" >/etc/sudoers.d/90-vm-test
+chmod 440 /etc/sudoers.d/90-vm-test

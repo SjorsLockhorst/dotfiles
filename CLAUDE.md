@@ -102,6 +102,35 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - Reload: `pkill -USR2 -x waybar` (styles/config). Restart detached: `setsid -f waybar`.
   Screenshot to check: `grim -o eDP-1 out.png`.
 
+## Base install (`install/`)
+- `install/install.sh <config>` installs Arch from the ISO: partition, LUKS, filesystem, pacstrap,
+  GRUB, user. `install/fw13.conf` is this Framework 13 as installed on 2025-11-05 (the pacstrap line
+  in `/var/log/pacman.log`), plus `sudo`, `git`, `chezmoi`, `zram-generator`. The script's header
+  says how to run it from the ISO; after the first boot: `chezmoi init --apply SjorsLockhorst`.
+- One function per step; the config picks the variant (`FILESYSTEM` btrfs|ext4, `ENCRYPTION`
+  luks|none). A new variant is a branch in that step's function plus checks in `test/vm/tests/`.
+- LUKS2 with PBKDF2 (GRUB can't unlock Argon2 keyslots). `/boot` inside the encrypted root, so GRUB
+  asks the passphrase; a keyfile in the initramfs spares a second prompt. The busybox `encrypt` hook
+  (a `mkinitcpio.conf.d` drop-in): its `cryptdevice=` form is what `system/tasks/grub_cmdline.yml`
+  extends with `allow-discards`.
+- Interactive by default (type the disk name, then the passwords). `--unattended` takes them from
+  the environment and refuses to run outside a VM.
+
+## Testing the base install (VM)
+- `test/vm/run.sh [--config <file>] [--keep]` (~4 min with the ISO cached): the latest Arch ISO,
+  checked against its checksum and release signature (cached in `~/.cache/dotfiles-vm`), in
+  QEMU + KVM + OVMF with an NVMe disk with 4K sectors like the laptop's. It installs over SSH, boots
+  the result, types the LUKS passphrase at GRUB on the serial console, then runs
+  `test/vm/tests/*.bats` in the VM. Logs, serial consoles and a screenshot: `test/out/vm/`.
+- Test-only differences from the laptop live in `test/vm/hook/run` (`install.sh --post-install`):
+  sshd with the test key, passwordless sudo, bats, a working nameserver. Never in `install.sh`.
+- QEMU's DNS forwarder only tries the host's first nameserver; when that one is down (192.168.1.19
+  at home was), the VM has no DNS. `vm.py dns` picks the first one that answers.
+- OVMF copies the firmware console to the serial port, which is how `vm.py type` sees and answers
+  GRUB's prompt (`wait=on`, so it can't miss it). The disk has no `bootindex`: the firmware boots the
+  entry `grub-install` made, as on the laptop. The NIC has no PXE ROM (`romfile=`).
+- Not reproduced: the AMD GPU, fingerprint reader, NPU, Wi-Fi.
+
 ## System config (Ansible)
 - Goal: an Arch base install plus `chezmoi init --apply` gives a working machine (`test/run.sh` is
   that, in Docker).
