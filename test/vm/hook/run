@@ -8,6 +8,11 @@ user=$1
 
 printf '[global-dns-domain-*]\nservers=%s\n' "$(cat dns)" >/etc/NetworkManager/conf.d/90-vm-test-dns.conf
 
+# As in test/Dockerfile: makepkg's curl has no timeout, so a stalled AUR source
+# would hang the apply. Give up after 2 minutes without data instead.
+sed -i 's|/usr/bin/curl -qgb "" |/usr/bin/curl -qgb "" --speed-limit 1 --speed-time 120 |' /etc/makepkg.conf
+grep -q -- '--speed-time 120' /etc/makepkg.conf
+
 pacman -S --noconfirm --needed openssh bats
 systemctl enable sshd
 install -d -m 700 -o "$user" -g "$user" "/home/$user/.ssh"

@@ -116,20 +116,34 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - Interactive by default (type the disk name, then the passwords). `--unattended` takes them from
   the environment and refuses to run outside a VM.
 
-## Testing the base install (VM)
-- `test/vm/run.sh [--config <file>] [--keep]` (~4 min with the ISO cached): the latest Arch ISO,
-  checked against its checksum and release signature (cached in `~/.cache/dotfiles-vm`), in
-  QEMU + KVM + OVMF with an NVMe disk with 4K sectors like the laptop's. It installs over SSH, boots
-  the result, types the LUKS passphrase at GRUB on the serial console, then runs
-  `test/vm/tests/*.bats` in the VM. Logs, serial consoles and a screenshot: `test/out/vm/`.
+## Testing a reinstall (VM)
+- `test/vm/run.sh [--config <file>] [--base-only] [--remote [url]] [--keep]` (~17 min, `--base-only`
+  ~4): the whole reinstall in QEMU + KVM + OVMF, with an NVMe disk with 4K sectors and a 2880x1920
+  screen like the laptop's. Four phases:
+  - install: the latest Arch ISO (checksum and release signature checked, cached in
+    `~/.cache/dotfiles-vm`), `install/install.sh` over SSH (the ISO's cloud-init takes the key).
+  - base: boot, type the LUKS passphrase at GRUB on the serial console, `test/vm/tests/base.bats`.
+  - dotfiles: `test/entrypoint.sh` and `test/tests`, exactly as in Docker, with the same paths
+    (`/src`, `/tests`, `/out`; the age key in `/run/secrets`, a RAM disk).
+  - reboot: boot again, `test/vm/tests/rebooted.bats`: what only a real boot shows (TRIM through
+    LUKS, GRUB's theme and fonts, the login screen, a timeshift snapshot, the docker group).
+- Debugging: each phase prints ok or FAILED. `test/out/vm/` has every phase's log, the serial
+  console, `<phase>-journal.log` and `<phase>-failed-units.log` of every boot, and `grub.png`,
+  `login.png`, `failed.png` at 2880x1920. `--keep` leaves the VM running where it stopped and prints
+  the ssh command. Without it the disk is deleted at the end: after the dotfiles phase it holds the
+  decrypted SSH key.
+- Don't run it while `test/run.sh` runs: that one starts with `rm -rf test/out`.
 - Test-only differences from the laptop live in `test/vm/hook/run` (`install.sh --post-install`):
-  sshd with the test key, passwordless sudo, bats, a working nameserver. Never in `install.sh`.
+  sshd with the test key, passwordless sudo, bats, a working nameserver, makepkg's download
+  timeout (as in `test/Dockerfile`). Never in `install.sh`.
 - QEMU's DNS forwarder only tries the host's first nameserver; when that one is down (192.168.1.19
   at home was), the VM has no DNS. `vm.py dns` picks the first one that answers.
 - OVMF copies the firmware console to the serial port, which is how `vm.py type` sees and answers
   GRUB's prompt (`wait=on`, so it can't miss it). The disk has no `bootindex`: the firmware boots the
   entry `grub-install` made, as on the laptop. The NIC has no PXE ROM (`romfile=`).
-- Not reproduced: the AMD GPU, fingerprint reader, NPU, Wi-Fi.
+- Not reproduced: the AMD GPU, fingerprint reader, NPU, Wi-Fi, bluetooth. Services that systemd
+  starts with their hardware (bluetooth) are only enabled by the playbook, not started: without
+  the hardware a start does nothing and counts as a change every run.
 
 ## System config (Ansible)
 - Goal: an Arch base install plus `chezmoi init --apply` gives a working machine (`test/run.sh` is
@@ -178,6 +192,8 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   the bats tests in `test/tests/`. Logs in `test/out/` (gitignored). `--remote` tests the pushed
   repo instead of the working tree, `--shell` opens a shell in the container afterwards.
 - Takes ~15+ min and re-downloads everything on purpose (realism over speed).
+- Currently fails when Docker reuses its cached `pacman -Syu` layer: the image's package database
+  is then as old as that layer, and the mirrors 404 on what it names (`00-install-yay`).
 - The age key is mounted read-only at runtime, never baked into the image.
 - Uses `--network host`: Tailscale DNS (100.100.100.100) is unreachable from Docker's bridge.
 - Apply runs with stdin `/dev/null`, so any script that prompts fails instead of hanging: use
