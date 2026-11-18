@@ -1,4 +1,4 @@
-# Docker test logs (test/run.sh)
+# Test logs (test/vm/run.sh, test/borg/run.sh)
 test/out/
 
 # Runtime logs written by apps, never source

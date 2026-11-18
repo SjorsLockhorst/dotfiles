@@ -31,5 +31,5 @@ install/
 # Notes for this repo, not a dotfile
 CLAUDE.md
 
-# Docker test harness for this repo, not a dotfile
+# Tests for this repo, not a dotfile
 test/

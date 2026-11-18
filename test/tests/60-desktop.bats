@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Docker has no GPU or display: only check that configs parse.
+# Hyprland itself isn't started (the VM has no GPU for it): check that configs parse.
 load helpers
 
 setup() {
@@ -70,7 +70,7 @@ setup() {
 }
 
 @test "a new session has no memlock limit for the NPU" {
-    # As in site.yml: never in Docker (own /dev, can't raise memlock)
+    # As in site.yml: only with an NPU this machine can use (not in the VM)
     [ -d /sys/bus/pci/drivers/amdxdna ] && [ -e /dev/accel/accel0 ] || skip "no usable AMD NPU"
     # sudo opens a PAM session, which applies limits.d
     [ "$(sudo -u "$(id -un)" bash -c 'ulimit -l')" = unlimited ]

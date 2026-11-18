@@ -1,12 +1,9 @@
 {{ if (eq .chezmoi.osRelease.id "arch") -}}
 #!/bin/bash
-# Enable the user services the configs rely on. System services are in
-# system/tasks/services.yml. Only starts them when systemd is running (not in Docker).
+# Enable and start the user services the configs rely on. System services are
+# in system/tasks/services.yml.
 set -euo pipefail
 
-now=()
-[[ -d /run/systemd/system ]] && now=(--now)
-
 # alpaca (127.0.0.1:3128) is the browser's proxy; this reloads it when ./z tenant changes the PAC.
-systemctl --user enable "${now[@]}" alpaca.service alpaca-pac-reload.path
+systemctl --user enable --now alpaca.service alpaca-pac-reload.path
 {{ end -}}

@@ -1,15 +1,15 @@
 #!/bin/bash
 # Test-only, run in the new system by install.sh --post-install: what the VM
 # test needs and the laptop doesn't get. sshd with the test key, sudo without
-# a password (as in test/Dockerfile), bats for the tests, and a nameserver
-# that answers (QEMU's DNS forwarder only tries the host's first one).
+# a password (the apply runs without a terminal), bats for the tests, and a
+# nameserver that answers (QEMU's DNS forwarder only tries the host's first one).
 set -euo pipefail
 user=$1
 
 printf '[global-dns-domain-*]\nservers=%s\n' "$(cat dns)" >/etc/NetworkManager/conf.d/90-vm-test-dns.conf
 
-# As in test/Dockerfile: makepkg's curl has no timeout, so a stalled AUR source
-# would hang the apply. Give up after 2 minutes without data instead.
+# makepkg's curl has no timeout, so a stalled AUR source would hang the apply.
+# Give up after 2 minutes without data instead.
 sed -i 's|/usr/bin/curl -qgb "" |/usr/bin/curl -qgb "" --speed-limit 1 --speed-time 120 |' /etc/makepkg.conf
 grep -q -- '--speed-time 120' /etc/makepkg.conf
 

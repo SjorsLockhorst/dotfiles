@@ -18,9 +18,7 @@
     - name: Package names for this OS
       ansible.builtin.include_vars: "vars/{{ ansible_facts.os_family }}.yml"
 
-    # Its driver and its device node. Docker sees the host's /sys but has its
-    # own /dev, and can't raise memlock: there the NPU's limits file makes
-    # every sudo fail (pam_open_session), so it must not get the NPU part.
+    # Its driver and its device node: an NPU this machine can use.
     - name: Look for an AMD NPU (Ryzen AI)
       ansible.builtin.stat:
         path: "{{ item }}"
@@ -31,8 +29,8 @@
       ansible.builtin.set_fact:
         npu_present: "{{ npu_paths.results | selectattr('stat.exists') | list | length == 2 }}"
 
-    # A section, not uncommenting the stock "#[multilib]": Docker's Arch image
-    # ships a pacman.conf without it.
+    # A section, not uncommenting the stock "#[multilib]": works whatever
+    # pacman.conf looks like.
     - name: The multilib repo is on (Steam)
       community.general.ini_file:
         path: /etc/pacman.conf
@@ -72,11 +70,6 @@
       changed_when: false
       check_mode: false
 
-    - name: Look for a running systemd (none in Docker)
-      ansible.builtin.stat:
-        path: /run/systemd/system
-      register: systemd_dir
-
     - name: Look for GRUB's settings
       ansible.builtin.stat:
         path: "{{ grub_default }}"
@@ -93,7 +86,6 @@
       ansible.builtin.set_fact:
         is_arch: "{{ ansible_facts.os_family == 'Archlinux' }}"
         root_is_btrfs: "{{ root_fstype.stdout == 'btrfs' }}"
-        systemd_running: "{{ systemd_dir.stat.exists }}"
         previewing_installs: "{{ ansible_check_mode and (system_packages_install is changed or multilib is changed) }}"
 
   tasks:

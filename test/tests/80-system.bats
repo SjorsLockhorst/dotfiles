@@ -12,7 +12,8 @@
 }
 
 @test "GRUB gets allow-discards on an encrypted root, once" {
-    # Docker has no LUKS root: run the task on stand-ins for /etc/default/grub.
+    # On stand-ins for /etc/default/grub, so a root without LUKS is covered too
+    # (rebooted.bats checks the VM's real kernel line).
     d=$BATS_TEST_TMPDIR
     echo 'GRUB_CMDLINE_LINUX="cryptdevice=UUID=1234:root root=/dev/mapper/root"' >"$d/luks"
     echo 'GRUB_CMDLINE_LINUX=""' >"$d/plain"

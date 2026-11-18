@@ -21,6 +21,6 @@
   ansible.builtin.systemd_service:
     name: borg-backup.timer
     enabled: true
-    state: "{{ 'started' if systemd_running else omit }}"
-    daemon_reload: "{{ systemd_running and borg_units is changed }}"
+    state: started
+    daemon_reload: "{{ borg_units is changed }}"
   when: not (ansible_check_mode and borg_units is changed)

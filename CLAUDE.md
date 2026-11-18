@@ -123,8 +123,10 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   - install: the latest Arch ISO (checksum and release signature checked, cached in
     `~/.cache/dotfiles-vm`), `install/install.sh` over SSH (the ISO's cloud-init takes the key).
   - base: boot, type the LUKS passphrase at GRUB on the serial console, `test/vm/tests/base.bats`.
-  - dotfiles: `test/entrypoint.sh` and `test/tests`, exactly as in Docker, with the same paths
-    (`/src`, `/tests`, `/out`; the age key in `/run/secrets`, a RAM disk).
+  - dotfiles: `test/vm/dotfiles.sh` runs `chezmoi init --apply` with THIS machine's `chezmoi data`
+    as prompt answers, then `test/tests/` (the repo in `/src`, the tests in `/tests`, logs in
+    `/out`; the age key in `/run/secrets`, a RAM disk). `--remote` tests the pushed repo instead of
+    the working tree.
   - reboot: boot again, `test/vm/tests/rebooted.bats`: what only a real boot shows (TRIM through
     LUKS, GRUB's theme and fonts, the login screen, a timeshift snapshot, the docker group).
 - Debugging: each phase prints ok or FAILED. `test/out/vm/` has every phase's log, the serial
@@ -132,10 +134,13 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   `login.png`, `failed.png` at 2880x1920. `--keep` leaves the VM running where it stopped and prints
   the ssh command. Without it the disk is deleted at the end: after the dotfiles phase it holds the
   decrypted SSH key.
-- Don't run it while `test/run.sh` runs: that one starts with `rm -rf test/out`.
+- The apply runs with stdin `/dev/null`, so any script that prompts fails instead of hanging: use
+  `--noconfirm` / `set -e` in `.chezmoiscripts`. It's capped at 60m (`APPLY_TIMEOUT`).
+- `test/out/vm/packages-not-in-dotfiles.txt` lists packages on this machine a reinstall would miss
+  (some only look missing: in the VM they came in as a dependency).
 - Test-only differences from the laptop live in `test/vm/hook/run` (`install.sh --post-install`):
   sshd with the test key, passwordless sudo, bats, a working nameserver, makepkg's download
-  timeout (as in `test/Dockerfile`). Never in `install.sh`.
+  timeout. Never in `install.sh`.
 - QEMU's DNS forwarder only tries the host's first nameserver; when that one is down (192.168.1.19
   at home was), the VM has no DNS. `vm.py dns` picks the first one that answers.
 - OVMF copies the firmware console to the serial port, which is how `vm.py type` sees and answers
@@ -144,10 +149,19 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - Not reproduced: the AMD GPU, fingerprint reader, NPU, Wi-Fi, bluetooth. Services that systemd
   starts with their hardware (bluetooth) are only enabled by the playbook, not started: without
   the hardware a start does nothing and counts as a change every run.
+- `test/` is in `.chezmoiignore`, otherwise it would be deployed to `~/test`.
+- Scripts in `.chezmoiscripts` run alphabetically per phase (before/after): `00-install-yay` must
+  sort before `install-packages`.
+- A package a config calls (waybar click, Hyprland bind, script) must be in the install-packages
+  lists; one the system config sets up goes in `system/vars/Archlinux.yml` instead (`10-packages`
+  checks both). A daemon must be enabled in `system/tasks/services.yml` (a fresh install leaves
+  services off; user units go in `run_onchange_after_enable-user-services.sh.tmpl`, and their
+  package too: `alpaca-proxy` once wasn't, which stopped the whole apply). AUR-only packages (e.g.
+  blueberry) go in the yay step.
 
 ## System config (Ansible)
-- Goal: an Arch base install plus `chezmoi init --apply` gives a working machine (`test/run.sh` is
-  that, in Docker).
+- Goal: an Arch base install plus `chezmoi init --apply` gives a working machine (`test/vm/run.sh`
+  is that, in a VM).
 - Everything root-owned outside `$HOME` (system services, `/etc` files, GRUB, the login screen,
   fingerprint login, Steam's multilib repo, the NPU, timeshift and autosnap, reflector, the borg
   timer, the login shell) is the Ansible playbook in `system/`: `site.yml`, one `tasks/<area>.yml`
@@ -156,10 +170,9 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - Turning on multilib triggers a full `pacman -Syu` (Arch has no partial upgrades) before the
   package step. Steam's virtual dependencies (Vulkan, libgl, font) are pinned in `vars/`, since
   `--noconfirm` would take the first provider.
-- The NPU part runs only where both `/sys/bus/pci/drivers/amdxdna` and `/dev/accel/accel0` exist,
-  so never in Docker. Docker sees the host's `/sys` but can't raise memlock: there the NPU's
-  `limits.d` file makes every `sudo` fail with `pam_open_session: Permission denied`. The laptop's
-  `system-apply --check --diff` covers it. Fingerprint enrolment stays manual (`fprintd-enroll`).
+- The NPU part runs only where both `/sys/bus/pci/drivers/amdxdna` and `/dev/accel/accel0` exist:
+  an NPU this machine can use, so not in the VM. The laptop's `system-apply --check --diff` covers
+  it. Fingerprint enrolment stays manual (`fprintd-enroll`).
 - The packages the playbook sets up are in `system/vars/<os_family>.yml` (installed first, in one
   `ansible.builtin.package` call, so names can differ per OS). The general tool lists, AUR packages
   (yay's sudo needs a terminal, which Ansible doesn't give it), `ansible` itself and user-level setup
@@ -180,33 +193,12 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   `when: not (ansible_check_mode and <that task's register> is changed)`. The same goes for
   packages: when `--check` finds some to install, `previewing_installs` skips the areas that need them.
 - `grub-mkconfig` and the first reflector run are handlers: they run only when their inputs changed,
-  and `grub-mkconfig` only where `/boot/grub/grub.cfg` exists (not in Docker).
-- Tests: `test/run.sh` runs the playbook as part of the fresh install. `60-desktop` and `70-services`
-  check what it set up; `80-system.bats` checks that a second run changes nothing, and the LUKS
-  `allow-discards` edit on stand-in files (Docker has no LUKS root). What Docker can't show (btrfs,
-  LUKS, running services, `grub-mkconfig`): `system-apply --check --diff` on the laptop.
-
-## Testing a fresh install (Docker)
-- `test/run.sh` builds a vanilla Arch image (`test/Dockerfile`: base + sudo user `sjors` + chezmoi
-  + bats), runs `chezmoi init --apply` with THIS machine's `chezmoi data` as prompt answers, then
-  the bats tests in `test/tests/`. Logs in `test/out/` (gitignored). `--remote` tests the pushed
-  repo instead of the working tree, `--shell` opens a shell in the container afterwards.
-- Takes ~15+ min and re-downloads everything on purpose (realism over speed).
-- Currently fails when Docker reuses its cached `pacman -Syu` layer: the image's package database
-  is then as old as that layer, and the mirrors 404 on what it names (`00-install-yay`).
-- The age key is mounted read-only at runtime, never baked into the image.
-- Uses `--network host`: Tailscale DNS (100.100.100.100) is unreachable from Docker's bridge.
-- Apply runs with stdin `/dev/null`, so any script that prompts fails instead of hanging: use
-  `--noconfirm` / `set -e` in `.chezmoiscripts`. Apply is capped at 60m (`APPLY_TIMEOUT`).
-- `test/` is in `.chezmoiignore`, otherwise it would be deployed to `~/test`.
-- Scripts in `.chezmoiscripts` run alphabetically per phase (before/after): `00-install-yay` must
-  sort before `install-packages`.
-- `test/out/packages-not-in-dotfiles.txt` lists packages on this machine a reinstall would miss.
-- A package a config calls (waybar click, Hyprland bind, script) must be in the install-packages
-  lists; one the system config sets up goes in `system/vars/Archlinux.yml` instead (`10-packages`
-  checks both). A daemon must be enabled in `system/tasks/services.yml` (a fresh install leaves
-  services off; user units go in `run_onchange_after_enable-user-services.sh.tmpl`). AUR-only
-  packages (e.g. blueberry) go in the yay step.
+  and `grub-mkconfig` only where `/boot/grub/grub.cfg` exists (GRUB is the bootloader).
+- Tests: the VM test's dotfiles phase runs the playbook through `chezmoi init --apply`.
+  `60-desktop` and `70-services` check what it set up; `80-system.bats` that a second run changes
+  nothing, and the `allow-discards` edit on stand-in files (with and without LUKS);
+  `test/vm/tests/rebooted.bats` what a reboot shows. Hardware the VM lacks (NPU, fingerprint
+  reader, GPU): `system-apply --check --diff` on the laptop.
 
 ## Backups (borg)
 - One-time setup (borgbackup user, keys, repos, `/home/borgbackup/backup_<target>.sh`) is done by the
@@ -243,7 +235,7 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 ## Snapshots (timeshift)
 - Daily snapshots (keep 5): `system/tasks/timeshift.yml` writes `/etc/timeshift/timeshift.json` and
   `/etc/cron.d/timeshift-hourly` exactly as the GUI's setup does, only when timeshift isn't set up
-  yet (so GUI changes stick) and `/` is btrfs (not in Docker).
+  yet (so GUI changes stick) and `/` is btrfs.
 - Timeshift schedules via cron: cronie must be enabled (in `system/tasks/services.yml`), or nothing
   happens.
 - Pre-upgrade snapshots come from `timeshift-autosnap` (pacman hook, own config in

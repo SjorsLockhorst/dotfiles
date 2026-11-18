@@ -5,8 +5,7 @@
 #             takes our key)
 #   base      boot it, typing the LUKS passphrase at GRUB on the serial
 #             console, then test/vm/tests/base.bats
-#   dotfiles  chezmoi init --apply and test/tests through test/entrypoint.sh,
-#             with the same paths as in Docker
+#   dotfiles  chezmoi init --apply, then test/tests (test/vm/dotfiles.sh)
 #   reboot    boot again, then test/vm/tests/rebooted.bats: what only a real
 #             boot shows (TRIM through LUKS, GRUB's theme, the login screen)
 #
@@ -249,27 +248,28 @@ base_phase() {
 
 # Runs with errexit off (called with ||): every step checks its own status.
 dotfiles_phase() {
-    phase dotfiles "chezmoi init --apply and test/tests, as in Docker (test/entrypoint.sh)"
+    phase dotfiles "chezmoi init --apply, then test/tests (test/vm/dotfiles.sh)"
     local data email prompt_bool status=0
     data=$(chezmoi data --format json) || return 1
     email=$(jq -r .email <<<"$data")
     prompt_bool=$(jq -r '[to_entries[] | select(.value | type == "boolean")
         | "\(.key)=\(.value)"] | join(",")' <<<"$data")
-    # The paths test/entrypoint.sh and test/tests expect (the Docker mounts).
-    # The age key goes to /run, a RAM disk.
+    # Where dotfiles.sh and test/tests look: the repo in /src, the tests in
+    # /tests, the logs in /out. The age key goes to /run, a RAM disk.
     vm_ssh "sudo install -d -o $user -g $user /src /out \
         && sudo install -D -m 600 -o $user /dev/stdin /run/secrets/key.txt \
         && sudo ln -sfn /src/test/tests /tests" <"$KEY" || return 1
     tar -C "$REPO" --exclude=./test/out -cf - . | vm_ssh "tar -C /src -xf -" || return 1
     echo "    takes ~20 min; follow it with: tail -f $OUT/dotfiles.log"
     vm_ssh "CHEZMOI_EMAIL='$email' CHEZMOI_PROMPT_BOOL='$prompt_bool' DOTFILES_REMOTE='$remote' \
-        bash /src/test/entrypoint.sh" >"$OUT/dotfiles.log" 2>&1 || status=$?
+        bash /src/test/vm/dotfiles.sh" >"$OUT/dotfiles.log" 2>&1 || status=$?
     mkdir -p "$OUT/dotfiles"
     vm_ssh "tar -C /out -cf - ." | tar -C "$OUT/dotfiles" -xf - || true
     collect dotfiles || true
     echo "    apply: exit $(cat "$OUT/dotfiles/apply.status" 2>/dev/null || echo '?') (dotfiles/apply.log)"
     grep -E '^not ok' "$OUT/dotfiles/tests.log" 2>/dev/null | sed 's/^/    /' || true
-    # Like test/run.sh: what this machine has that a reinstall would not bring back
+    # What this machine has that a reinstall would not bring back (some only
+    # look missing: in the VM they came in as a dependency)
     if [[ -f $OUT/dotfiles/packages-explicit.txt ]]; then
         comm -23 <(pacman -Qqe | sort) <(sort "$OUT/dotfiles/packages-explicit.txt") >"$OUT/packages-not-in-dotfiles.txt"
         echo "    $(wc -l <"$OUT/packages-not-in-dotfiles.txt") packages on this machine are not installed by the dotfiles (packages-not-in-dotfiles.txt)"

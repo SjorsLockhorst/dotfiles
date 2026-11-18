@@ -1,18 +1,23 @@
 #!/usr/bin/env bats
-# Docker has no running systemd: this checks the services are enabled (unit
-# symlinks), not that they start.
+# The services the dotfiles turn on: enabled for every boot, and running now.
 load helpers
 
-@test "base services and timers are enabled" {
-    for u in grub-btrfsd.service cronie.service reflector.timer paccache.timer; do
-        echo "$u: $(systemctl is-enabled "$u" 2>&1)"
+# enabled_and_running <unit>...
+enabled_and_running() {
+    for u in "$@"; do
+        echo "$u: $(systemctl is-enabled "$u" 2>&1), $(systemctl is-active "$u" 2>&1)"
         systemctl is-enabled -q "$u"
+        systemctl is-active -q "$u"
     done
 }
 
+@test "base services and timers are enabled and running" {
+    enabled_and_running grub-btrfsd.service cronie.service reflector.timer paccache.timer
+}
+
 @test "a btrfs root gets a monthly scrub" {
-    [ "$(findmnt -no FSTYPE /)" = btrfs ] || skip "/ is not btrfs (Docker)"
-    systemctl is-enabled 'btrfs-scrub@-.timer'
+    [ "$(findmnt -no FSTYPE /)" = btrfs ] || skip "/ is not btrfs"
+    enabled_and_running 'btrfs-scrub@-.timer'
 }
 
 @test "the mirrorlist comes from reflector" {
@@ -20,13 +25,12 @@ load helpers
     grep -q '^Server = https://' /etc/pacman.d/mirrorlist
 }
 
-@test "desktop services are enabled" {
+@test "desktop services are enabled and running" {
     skip_unless hyprland
-    for s in sddm.service NetworkManager.service bluetooth.service power-profiles-daemon.service \
-        tailscaled.service docker.socket; do
-        echo "$s: $(systemctl is-enabled "$s" 2>&1)"
-        systemctl is-enabled -q "$s"
-    done
+    enabled_and_running sddm.service NetworkManager.service power-profiles-daemon.service \
+        tailscaled.service docker.socket
+    # Started by systemd once an adapter shows up (the VM has none)
+    systemctl is-enabled -q bluetooth.service
 }
 
 @test "the user can use docker without sudo" {
@@ -34,14 +38,14 @@ load helpers
     id -nG "$(id -un)" | grep -qw docker
 }
 
-@test "borg backup timer is installed and enabled" {
+@test "borg backup timer is installed, enabled and running" {
     skip_unless backup
     [ -x /usr/local/bin/borg-backup-run ]
-    systemctl is-enabled borg-backup.timer
+    enabled_and_running borg-backup.timer
 }
 
 @test "timeshift takes daily snapshots" {
-    [ "$(findmnt -no FSTYPE /)" = btrfs ] || skip "/ is not btrfs (Docker)"
+    [ "$(findmnt -no FSTYPE /)" = btrfs ] || skip "/ is not btrfs"
     jq -e '.schedule_daily == "true" and .do_first_run == "false"' /etc/timeshift/timeshift.json
     grep -q 'timeshift --check' /etc/cron.d/timeshift-hourly
 }
