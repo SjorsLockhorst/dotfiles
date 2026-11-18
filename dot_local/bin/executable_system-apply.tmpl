@@ -1,0 +1,12 @@
+#!/bin/bash
+# Apply the system config (system/ in the chezmoi repo, Ansible) to this
+# machine. chezmoi apply runs it when that changes. Extra arguments go to
+# ansible-playbook: `system-apply --check --diff` shows what it would change.
+set -euo pipefail
+
+ask=()
+# No terminal (Docker's test user, which has passwordless sudo): don't ask.
+[[ -t 0 ]] && ask=(--ask-become-pass)
+exec ansible-playbook "${ask[@]}" \
+    -e {{ dict "hyprland" .hyprland "backup" .backup "zsh" .zsh | toJson | squote }} \
+    {{ joinPath .chezmoi.sourceDir "system/site.yml" | quote }} "$@"

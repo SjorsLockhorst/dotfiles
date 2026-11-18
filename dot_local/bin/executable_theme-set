@@ -104,6 +104,19 @@ if [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] && command -v gsettings >/dev/null; th
     gsettings set org.gnome.desktop.interface icon-theme "$icons"
 fi
 
+# Login screen (SDDM): the greeter runs as the sddm user, which can't read your
+# home, so copy its colours and the wallpaper to the folder it reads. That one
+# is yours (system/tasks/sddm.yml), so no sudo. theme-bg-next too.
+login=/var/lib/sddm-theme
+if [[ -w $login ]]; then
+    install -m644 "$CURRENT/sddm.conf" "$login/theme.conf"
+    if [[ -e "$CURRENT/background" ]]; then
+        install -m644 "$CURRENT/background" "$login/background"
+    else
+        rm -f "$login/background"
+    fi
+fi
+
 # Obsidian: install the colours as a theme ("Omarchy", as omarchy does) in every
 # vault. Rewriting theme.css makes Obsidian reload it live. Pick it once per vault
 # under Appearance > Themes.

@@ -11,10 +11,13 @@ if [ ! -d "$HOME/.oh-my-zsh" ]; then
 
 fi
 
-# Login shell (the installer's chsh would ask for a password)
+{{ if ne .chezmoi.osRelease.id "arch" -}}
+# Login shell (the installer's chsh would ask for a password). On Arch:
+# system/tasks/shell.yml.
 if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v zsh)" ]; then
 	sudo chsh -s "$(command -v zsh)" "$(id -un)"
 fi
+{{ end -}}
 
 if [ ! -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting ]; then
 	# Get syntax highlighting

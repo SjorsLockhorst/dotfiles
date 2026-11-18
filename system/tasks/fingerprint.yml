@@ -1,0 +1,33 @@
+# Fingerprint or password, for the login screen, hyprlock and local logins.
+# Enrolling a finger stays manual: fprintd-enroll. Without a reader,
+# pam_fprintd fails and the password is asked as before. The odd spacing is
+# what the Arch wiki's snippets have (kept, so this machine's files match).
+
+- name: hyprlock takes a fingerprint
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/hyprlock
+    regexp: '^auth\s+sufficient\s+pam_fprintd\.so'
+    line: "auth        sufficient  pam_fprintd.so"
+    insertbefore: '^auth\s+include\s+login'
+
+- name: Local logins take a fingerprint
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/system-local-login
+    regexp: '^auth\s+sufficient\s+pam_fprintd\.so'
+    line: "auth      sufficient pam_fprintd.so"
+    insertbefore: '^auth\s+include\s+system-login'
+
+# A typed password skips the fingerprint; an empty one (Enter) asks for it.
+- name: The login screen takes a password first
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sddm
+    regexp: '^auth\s+\[success=1 new_authtok_reqd=1 default=ignore\]\s+pam_unix\.so'
+    line: "auth \t\t\t[success=1 new_authtok_reqd=1 default=ignore]  \tpam_unix.so try_first_pass likeauth nullok"
+    insertbefore: '^auth\s+include\s+system-login'
+
+- name: Then a fingerprint
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sddm
+    regexp: '^auth\s+sufficient\s+pam_fprintd\.so'
+    line: "auth \t\t\tsufficient  \tpam_fprintd.so"
+    insertbefore: '^auth\s+include\s+system-login'

@@ -1,0 +1,10 @@
+# TRIM through LUKS: dm-crypt drops discards unless the encrypt hook opens the
+# root with allow-discards. Only touches a cryptdevice= without options; one
+# that has options already is left alone.
+
+- name: Discards pass through the encrypted root
+  ansible.builtin.replace:
+    path: "{{ grub_default }}"
+    regexp: '^(GRUB_CMDLINE_LINUX="(?:[^"]*\s)?cryptdevice=[^\s:"]+:[^\s:"]+)(?=[\s"])'
+    replace: '\1:allow-discards'
+  notify: Regenerate grub.cfg

@@ -1,6 +1,8 @@
 .oh-my-zsh/cache/**
 util/
 key.txt.age
+# System config, applied by system-apply (Ansible), not a dotfile
+system/
 
 {{ if (not .plasma_i3) -}}
 .xsessionrc

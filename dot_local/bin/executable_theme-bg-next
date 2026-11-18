@@ -21,4 +21,8 @@ done
 ln -sfn "$next" "$CURRENT/background"
 mkdir -p "$STATE/backgrounds"
 basename "$next" >"$STATE/backgrounds/$name"
+# The login screen's copy (see theme-set)
+if [[ -w /var/lib/sddm-theme ]]; then
+    install -m644 "$next" /var/lib/sddm-theme/background
+fi
 hyprctl hyprpaper wallpaper ",$(readlink -f "$next")" >/dev/null

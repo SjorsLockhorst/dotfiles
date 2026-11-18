@@ -1,0 +1,84 @@
+# Login screen (SDDM): our own theme from util/sddm-theme, hyprlock's layout.
+# The theme is root's, but its colours and wallpaper are in /var/lib/sddm-theme,
+# which is the user's: theme-set and theme-bg-next update them there without
+# sudo (the greeter runs as the sddm user, which can't read your home). Runs
+# before the theme-refresh script, which fills that folder once it exists.
+
+- name: Login screen theme files
+  ansible.builtin.set_fact:
+    sddm_theme_files: "{{ lookup('fileglob', playbook_dir ~ '/../util/sddm-theme/*', wantlist=True) | map('basename') | list }}"
+
+- name: Login screen theme folder
+  ansible.builtin.file:
+    path: /usr/share/sddm/themes/desktop
+    state: directory
+    mode: "0755"
+  register: sddm_theme_folder
+
+# --check can't look inside a folder it only pretends to create: skip what goes
+# in it (all of that is new anyway). Same for sddm.conf.d below.
+- name: Login screen theme
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../util/sddm-theme/{{ item }}"
+    dest: "/usr/share/sddm/themes/desktop/{{ item }}"
+    mode: "0644"
+  loop: "{{ sddm_theme_files }}"
+  when: not (ansible_check_mode and sddm_theme_folder is changed)
+
+- name: Look for files util/sddm-theme no longer has
+  ansible.builtin.find:
+    paths: /usr/share/sddm/themes/desktop
+    file_type: any
+    hidden: true
+  register: sddm_theme_installed
+
+- name: Files dropped from util/sddm-theme are gone
+  ansible.builtin.file:
+    path: "/usr/share/sddm/themes/desktop/{{ item }}"
+    state: absent
+  loop: "{{ sddm_theme_installed.files | map(attribute='path') | map('basename')
+            | reject('in', sddm_theme_files + ['theme.conf.user']) | list }}"
+
+- name: Folder for the login screen's colours and wallpaper, owned by the user
+  ansible.builtin.file:
+    path: /var/lib/sddm-theme
+    state: directory
+    owner: "{{ lookup('pipe', 'id -un') }}"
+    group: "{{ lookup('pipe', 'id -gn') }}"
+    mode: "0755"
+
+# Dangling until theme-set writes theme.conf.
+- name: The theme reads its colours from there
+  ansible.builtin.file:
+    src: /var/lib/sddm-theme/theme.conf
+    dest: /usr/share/sddm/themes/desktop/theme.conf.user
+    state: link
+    force: true
+  when: not (ansible_check_mode and sddm_theme_folder is changed)
+
+- name: SDDM's drop-in folder (not there on a fresh install)
+  ansible.builtin.file:
+    path: /etc/sddm.conf.d
+    state: directory
+    mode: "0755"
+  register: sddm_conf_d
+
+# borgbackup (from dot_playbooks) has a normal UID, so SDDM would list it.
+- name: SDDM uses the theme
+  ansible.builtin.copy:
+    dest: /etc/sddm.conf.d/10-theme.conf
+    mode: "0644"
+    content: |
+      [Theme]
+      Current=desktop
+
+      [Users]
+      HideUsers=borgbackup
+  when: not (ansible_check_mode and sddm_conf_d is changed)
+
+# /etc/sddm.conf wins over sddm.conf.d: drop the theme an older setup put there.
+- name: No other theme in /etc/sddm.conf
+  ansible.builtin.lineinfile:
+    path: /etc/sddm.conf
+    regexp: '^Current='
+    state: absent

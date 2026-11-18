@@ -1,0 +1,35 @@
+# The system services the configs rely on: a fresh install has them installed
+# but off. Started too where systemd runs (not in Docker). User services are
+# in .chezmoiscripts/run_onchange_after_enable-user-services.sh.
+
+- name: Services are enabled
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: "{{ 'started' if systemd_running else omit }}"
+  loop: "{{ base_services + (btrfs_services if root_is_btrfs else []) + (desktop_services if hyprland | bool else []) }}"
+  vars:
+    base_services:
+      - grub-btrfsd.service  # snapshots in the GRUB menu
+      - cronie.service       # runs timeshift's hourly snapshot check (timeshift.yml)
+      - reflector.timer      # refreshes the mirrorlist weekly (reflector.yml)
+      - paccache.timer       # keeps the 3 newest versions of each package in the cache
+    btrfs_services:
+      - btrfs-scrub@-.timer  # monthly checksum scrub of /
+    # sddm: login screen. NetworkManager: nm-applet/waybar-vpn. bluetooth:
+    # blueberry. docker.socket: waybar-docker/lazydocker (socket-activated).
+    desktop_services:
+      - sddm.service
+      - NetworkManager.service
+      - bluetooth.service
+      - power-profiles-daemon.service
+      - tailscaled.service
+      - docker.socket
+
+# Takes effect on the next login.
+- name: The user can use docker without sudo
+  ansible.builtin.user:
+    name: "{{ lookup('pipe', 'id -un') }}"
+    groups: docker
+    append: true
+  when: hyprland | bool

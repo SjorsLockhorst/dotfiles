@@ -1,0 +1,38 @@
+# Arch package names for what system/ sets up, by the task file that needs
+# them. site.yml installs them first, in one go. General tools and AUR packages
+# (timeshift-autosnap) are in chezmoi's install-packages script.
+system_packages:
+  base:
+    - grub-btrfs             # services: snapshots in the GRUB menu (pulls in grub)
+    - cronie                 # services: runs timeshift's hourly check
+    - timeshift              # timeshift
+    - reflector              # reflector
+    - pacman-contrib         # services: paccache.timer
+  # Only with hyprland
+  desktop:
+    - sddm                   # sddm, services: the login screen
+    - qt6-declarative        # sddm: the theme is QtQuick
+    - qt6-imageformats       # sddm: wallpapers in any format
+    - ttf-dejavu             # grub_theme: the menu fonts
+    - networkmanager         # services
+    - bluez                  # services: bluetooth
+    - power-profiles-daemon  # services
+    - tailscale              # services
+    - docker                 # services: docker.socket, the docker group
+    - fprintd                # fingerprint
+    # Steam, from multilib (site.yml turns it on). Its virtual dependencies
+    # pinned to this AMD laptop's: --noconfirm would take the first provider.
+    - steam
+    - vulkan-radeon          # vulkan-driver
+    - lib32-vulkan-radeon    # lib32-vulkan-driver
+    - lib32-mesa             # lib32-libgl
+    - ttf-liberation         # ttf-font
+  # Only with an AMD NPU (Ryzen AI): its runtime and FastFlowLM, which runs LLMs on it
+  npu:
+    - xrt
+    - xrt-plugin-amdxdna
+    - fastflowlm
+
+# shell: the login shell, as listed in /etc/shells. Not `command -v zsh`: that
+# can give /usr/sbin/zsh (a symlink), which sddm doesn't list on the login screen.
+zsh_path: /usr/bin/zsh

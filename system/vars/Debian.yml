@@ -1,0 +1,6 @@
+# Debian isn't maintained: there the playbook only runs for the backup timer
+# (backup = true), and borg comes from chezmoi's install-packages script.
+system_packages:
+  base: []
+  desktop: []
+  npu: []

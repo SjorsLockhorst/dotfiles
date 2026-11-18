@@ -1,0 +1,17 @@
+# AMD NPU (Ryzen AI): XRT pins its buffers in memory, more than the default
+# memlock limit allows (packages in vars/). Takes effect on the next login.
+
+# No package owns this folder.
+- name: Folder for PAM limits
+  ansible.builtin.file:
+    path: /etc/security/limits.d
+    state: directory
+    mode: "0755"
+  register: limits_d
+
+- name: No memlock limit for the NPU
+  when: not (ansible_check_mode and limits_d is changed)
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-amdxdna.conf
+    mode: "0644"
+    content: "* - memlock unlimited\n"

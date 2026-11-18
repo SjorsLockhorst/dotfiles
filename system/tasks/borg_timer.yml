@@ -1,0 +1,26 @@
+# The scheduled borg backup (system units, so not a dotfile). The schedule is
+# OnCalendar= in util/borg-backup/borg-backup.timer. The one-time setup (user,
+# keys, repos) is dot_playbooks/, run by hand.
+
+- name: Backup runner
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../util/borg-backup/borg-backup-run"
+    dest: /usr/local/bin/borg-backup-run
+    mode: "0755"
+
+- name: Backup units
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../util/borg-backup/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: "0644"
+  loop: [borg-backup.service, borg-backup.timer]
+  register: borg_units
+
+# --check can't enable a unit it only pretends to install.
+- name: Backups are scheduled
+  ansible.builtin.systemd_service:
+    name: borg-backup.timer
+    enabled: true
+    state: "{{ 'started' if systemd_running else omit }}"
+    daemon_reload: "{{ systemd_running and borg_units is changed }}"
+  when: not (ansible_check_mode and borg_units is changed)

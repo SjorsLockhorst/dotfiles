@@ -1,0 +1,10 @@
+{{ if or (eq .chezmoi.osRelease.id "arch") .backup -}}
+#!/bin/bash
+# System config outside $HOME: the Ansible playbook in system/ (see system-apply).
+# Re-runs when the playbook, the files it installs or the settings change:
+# {{ output "sh" "-c" (printf "cd %s && find system util/borg-backup util/sddm-theme -type f | sort | xargs sha256sum" (.chezmoi.sourceDir | quote)) | sha256sum }}
+# hyprland={{ .hyprland }} backup={{ .backup }} zsh={{ .zsh }}
+set -euo pipefail
+
+~/.local/bin/system-apply
+{{ end -}}

@@ -1,0 +1,133 @@
+# GRUB menu theme: arch-silence, flat grey, so it suits every desktop theme
+# (GRUB can't follow theme-set). Pinned by commit and checksum because root
+# unpacks it. It is drawn for 1x screens: for the 2880x1920 panel, 40px menu
+# fonts from DejaVu (vars/), a wider menu, and the help line (a 370x16 image)
+# redrawn as text.
+
+- name: GRUB theme settings
+  ansible.builtin.set_fact:
+    grub_theme_dir: /usr/share/grub/themes/arch-silence
+    grub_theme_commit: cd4bba13ca825eb7f182e0d4ea8a63cd544d8036
+    grub_theme_sha256: 09f31257ef8ae7694a39bd9822320d53108e7186ed03e8a7af2a1acd33bd7696
+
+- name: Look up the installed GRUB theme's commit
+  ansible.builtin.slurp:
+    src: "{{ grub_theme_dir }}/.commit"
+  register: grub_theme_installed
+  failed_when: false
+
+# The download is real even in --check, so the unpack step can be checked. It
+# only touches a temporary file, so it doesn't count as a change.
+- name: GRUB theme at the pinned commit
+  when: grub_theme_installed.content | default('') | b64decode | trim != grub_theme_commit
+  block:
+    - name: Download location for the GRUB theme
+      ansible.builtin.tempfile:
+        suffix: .tar.gz
+      register: grub_theme_tarball
+      check_mode: false
+      changed_when: false
+
+    - name: Download the GRUB theme
+      ansible.builtin.get_url:
+        url: "https://github.com/fghibellini/arch-silence/archive/{{ grub_theme_commit }}.tar.gz"
+        dest: "{{ grub_theme_tarball.path }}"
+        checksum: "sha256:{{ grub_theme_sha256 }}"
+        force: true
+      check_mode: false
+      changed_when: false
+
+    - name: Remove the old GRUB theme
+      ansible.builtin.file:
+        path: "{{ grub_theme_dir }}"
+        state: absent
+
+    - name: GRUB theme folder
+      ansible.builtin.file:
+        path: "{{ grub_theme_dir }}"
+        state: directory
+        mode: "0755"
+      register: grub_theme_folder
+
+    # --check can't look inside a folder it only pretends to create: skip what
+    # goes in it (all of that is new anyway).
+    - name: Unpack the GRUB theme
+      ansible.builtin.unarchive:
+        src: "{{ grub_theme_tarball.path }}"
+        remote_src: true
+        dest: "{{ grub_theme_dir }}"
+        extra_opts: [--strip-components=2, --wildcards, "*/theme/*"]
+      when: not (ansible_check_mode and grub_theme_folder is changed)
+      notify: Regenerate grub.cfg
+
+    - name: Remember the GRUB theme's commit
+      ansible.builtin.copy:
+        content: "{{ grub_theme_commit }}\n"
+        dest: "{{ grub_theme_dir }}/.commit"
+        mode: "0644"
+      when: not (ansible_check_mode and grub_theme_folder is changed)
+
+  always:
+    - name: Remove the downloaded GRUB theme
+      ansible.builtin.file:
+        path: "{{ grub_theme_tarball.path }}"
+        state: absent
+      when: grub_theme_tarball.path is defined
+      check_mode: false
+      changed_when: false
+
+- name: GRUB theme fonts for the 2880x1920 panel
+  ansible.builtin.command:
+    argv: [grub-mkfont, -s, "{{ item.size }}", -o, "{{ grub_theme_dir }}/{{ item.file }}", "/usr/share/fonts/TTF/{{ item.ttf }}"]
+    creates: "{{ grub_theme_dir }}/{{ item.file }}"
+  loop:
+    - {file: dejavu_bold_40.pf2, size: 40, ttf: DejaVuSans-Bold.ttf}
+    - {file: dejavu_mono_32.pf2, size: 32, ttf: DejaVuSansMono.ttf}
+    - {file: dejavu_regular_28.pf2, size: 28, ttf: DejaVuSans.ttf}
+  notify: Regenerate grub.cfg
+
+# grub.cfg loads every .pf2 in the theme folder, so leftovers would load too.
+- name: Upstream fonts and help-line image are gone
+  ansible.builtin.file:
+    path: "{{ grub_theme_dir }}/{{ item }}"
+    state: absent
+  loop: [dejavu_bold_14.pf2, dejavu_mono_12.pf2, help_bar.png]
+  notify: Regenerate grub.cfg
+
+- name: The theme uses those fonts and a bigger menu
+  ansible.builtin.replace:
+    path: "{{ grub_theme_dir }}/theme.txt"
+    regexp: "{{ item.from }}"
+    replace: "{{ item.to }}"
+  when: not (ansible_check_mode and grub_theme_folder is changed)
+  loop:
+    # The exact names grub-mkfont embeds: "<family> <style> <size>".
+    - {from: '"Dejavu Sans Mono 12"', to: '"DejaVu Sans Mono Regular 32"'}
+    - {from: '"DejaVu Sans Bold 14"', to: '"DejaVu Sans Bold 40"'}
+    - {from: 'left = 50%-150', to: 'left = 50%-300'}
+    - {from: 'width = 500$', to: 'width = 1400'}
+    - {from: 'height = 300$', to: 'height = 600'}
+    - {from: 'item_height = 26$', to: 'item_height = 64'}
+
+- name: The help line is text
+  when: not (ansible_check_mode and grub_theme_folder is changed)
+  ansible.builtin.replace:
+    path: "{{ grub_theme_dir }}/theme.txt"
+    regexp: '#help bar at the bottom\n\+ image \{[^}]*\}'
+    replace: |-
+      + label {
+          top = 100%-90
+          left = 0
+          width = 100%
+          align = "center"
+          color = "#1793d1"
+          font = "DejaVu Sans Regular 28"
+          text = "Select by pressing Return or edit options with E"
+      }
+
+- name: GRUB uses the theme
+  ansible.builtin.lineinfile:
+    path: "{{ grub_default }}"
+    regexp: '^GRUB_THEME='
+    line: 'GRUB_THEME="{{ grub_theme_dir }}/theme.txt"'
+  notify: Regenerate grub.cfg

@@ -1,0 +1,148 @@
+# System config outside $HOME, which chezmoi's FAQ leaves to a configuration
+# management tool. Run by run_onchange_after_system.sh on chezmoi apply, or by
+# hand with system-apply (`system-apply --check --diff` to preview).
+#
+# Needs the chezmoi settings hyprland, backup and zsh as extra vars
+# (system-apply passes them). Package names per OS are in vars/<os_family>.yml.
+
+- name: System config
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  gather_subset: [min]
+  become: true
+  vars:
+    grub_default: /etc/default/grub
+
+  pre_tasks:
+    - name: Package names for this OS
+      ansible.builtin.include_vars: "vars/{{ ansible_facts.os_family }}.yml"
+
+    # Its driver and its device node. Docker sees the host's /sys but has its
+    # own /dev, and can't raise memlock: there the NPU's limits file makes
+    # every sudo fail (pam_open_session), so it must not get the NPU part.
+    - name: Look for an AMD NPU (Ryzen AI)
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: [/sys/bus/pci/drivers/amdxdna, /dev/accel/accel0]
+      register: npu_paths
+
+    - name: Is there a usable AMD NPU
+      ansible.builtin.set_fact:
+        npu_present: "{{ npu_paths.results | selectattr('stat.exists') | list | length == 2 }}"
+
+    # A section, not uncommenting the stock "#[multilib]": Docker's Arch image
+    # ships a pacman.conf without it.
+    - name: The multilib repo is on (Steam)
+      community.general.ini_file:
+        path: /etc/pacman.conf
+        section: multilib
+        option: Include
+        value: /etc/pacman.d/mirrorlist
+        mode: "0644"
+      when: ansible_facts.os_family == 'Archlinux' and hyprland | bool
+      register: multilib
+
+    # Arch doesn't support partial upgrades: a new repo means a full -Syu.
+    - name: Sync the new repo and upgrade
+      community.general.pacman:
+        update_cache: true
+        upgrade: true
+      when: multilib is changed and not ansible_check_mode
+
+    # Before the lookups below: on a fresh machine /etc/default/grub only
+    # exists once grub-btrfs pulled in grub. In --check, multilib isn't synced,
+    # so Steam can't be looked up yet.
+    - name: Packages the system config needs
+      ansible.builtin.package:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages: >-
+          {{ system_packages.base
+             + (system_packages.desktop if hyprland | bool else [])
+             + (system_packages.npu if npu_present else []) }}
+      when: packages | length > 0 and not (ansible_check_mode and multilib is changed)
+      register: system_packages_install
+
+    # check_mode: false on read-only lookups, so --check still sees the system.
+    - name: Look at the root filesystem
+      ansible.builtin.command: findmnt -no FSTYPE /
+      register: root_fstype
+      changed_when: false
+      check_mode: false
+
+    - name: Look for a running systemd (none in Docker)
+      ansible.builtin.stat:
+        path: /run/systemd/system
+      register: systemd_dir
+
+    - name: Look for GRUB's settings
+      ansible.builtin.stat:
+        path: "{{ grub_default }}"
+      register: grub_default_stat
+
+    - name: Look for GRUB's generated config (only where GRUB is the bootloader)
+      ansible.builtin.stat:
+        path: /boot/grub/grub.cfg
+      register: grub_cfg_stat
+
+    # previewing_installs: --check found packages to install. It can't configure
+    # what it only pretends to install, so the tasks that need them are skipped.
+    - name: Facts the tasks branch on
+      ansible.builtin.set_fact:
+        is_arch: "{{ ansible_facts.os_family == 'Archlinux' }}"
+        root_is_btrfs: "{{ root_fstype.stdout == 'btrfs' }}"
+        systemd_running: "{{ systemd_dir.stat.exists }}"
+        previewing_installs: "{{ ansible_check_mode and (system_packages_install is changed or multilib is changed) }}"
+
+  tasks:
+    - name: Services
+      ansible.builtin.import_tasks: tasks/services.yml
+      when: is_arch and not previewing_installs
+
+    - name: Mirrorlist
+      ansible.builtin.import_tasks: tasks/reflector.yml
+      when: is_arch and not previewing_installs
+
+    - name: Snapshots
+      ansible.builtin.import_tasks: tasks/timeshift.yml
+      when: is_arch and root_is_btrfs and not previewing_installs
+
+    - name: GRUB kernel parameters
+      ansible.builtin.import_tasks: tasks/grub_cmdline.yml
+      when: grub_default_stat.stat.exists
+
+    - name: GRUB theme
+      ansible.builtin.import_tasks: tasks/grub_theme.yml
+      when: hyprland | bool and grub_default_stat.stat.exists and not previewing_installs
+
+    - name: Login screen
+      ansible.builtin.import_tasks: tasks/sddm.yml
+      when: hyprland | bool and not previewing_installs
+
+    - name: Fingerprint login
+      ansible.builtin.import_tasks: tasks/fingerprint.yml
+      when: is_arch and hyprland | bool and not previewing_installs
+
+    - name: NPU
+      ansible.builtin.import_tasks: tasks/npu.yml
+      when: is_arch and npu_present
+
+    - name: Login shell
+      ansible.builtin.import_tasks: tasks/shell.yml
+      when: is_arch and zsh | bool
+
+    - name: Backup timer
+      ansible.builtin.import_tasks: tasks/borg_timer.yml
+      when: backup | bool
+
+  handlers:
+    - name: Regenerate grub.cfg
+      ansible.builtin.command: grub-mkconfig -o /boot/grub/grub.cfg
+      when: grub_cfg_stat.stat.exists
+      changed_when: true
+
+    - name: Refresh the mirrorlist
+      ansible.builtin.command: reflector @/etc/xdg/reflector/reflector.conf
+      changed_when: true

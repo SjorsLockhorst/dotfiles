@@ -1,0 +1,10 @@
+# Mirrorlist: the 10 fastest https mirrors in NL/BE that synced in the last
+# 12h. reflector.timer (services.yml) refreshes it weekly; the first refresh is
+# the handler, as the timer only fires a week after it is enabled.
+
+- name: Reflector settings
+  ansible.builtin.copy:
+    src: reflector.conf
+    dest: /etc/xdg/reflector/reflector.conf
+    mode: "0644"
+  notify: Refresh the mirrorlist

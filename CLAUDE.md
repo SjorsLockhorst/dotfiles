@@ -78,6 +78,19 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   omarchy does. Pick it once per vault in Obsidian; vault config is not chezmoi-managed.
 - rofi variable names can't contain `_` (the whole .rasi silently fails to parse).
 
+## Login screen (SDDM)
+- Own theme `desktop` (`util/sddm-theme/`, hyprlock's layout), installed into
+  `/usr/share/sddm/themes/desktop` by `system/tasks/sddm.yml`, set in
+  `/etc/sddm.conf.d/10-theme.conf` (`/etc/sddm.conf` would win over it: keep `Current=` out of it).
+- The greeter runs as user `sddm` and can't read `~` (700). So its colours (template
+  `sddm.conf.tpl`) and wallpaper go to `/var/lib/sddm-theme/` (owned by you): `theme-set` and
+  `theme-bg-next` copy them there without sudo. The theme's `theme.conf.user` links to it.
+- The greeter runs on Xorg at scale 1, so the QML scales by screen height (`s`), not DPI.
+- Preview without logging out: `sddm-greeter-qt6 --test-mode --theme <dir>` (a window; logs go to
+  the journal, not stderr). Keyboard layout and power buttons stay hidden in test mode.
+- `qmllint Main.qml` (`/usr/lib/qt6/bin`) exits non-zero only on real errors; the "unqualified"
+  warnings are the greeter's injected `sddm`/`config`/`userModel`.
+
 ## Waybar
 - Two bars in `dot_config/waybar/config` (compact on `eDP-1`, full on `!eDP-1`); module
   definitions are shared in `modules.json` (via `include`). Variants use `module#name`.
@@ -88,6 +101,47 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 - waybar 0.15 custom modules: `{}` in a format next to `{icon}` errors; use `{text}`.
 - Reload: `pkill -USR2 -x waybar` (styles/config). Restart detached: `setsid -f waybar`.
   Screenshot to check: `grim -o eDP-1 out.png`.
+
+## System config (Ansible)
+- Goal: an Arch base install plus `chezmoi init --apply` gives a working machine (`test/run.sh` is
+  that, in Docker).
+- Everything root-owned outside `$HOME` (system services, `/etc` files, GRUB, the login screen,
+  fingerprint login, Steam's multilib repo, the NPU, timeshift and autosnap, reflector, the borg
+  timer, the login shell) is the Ansible playbook in `system/`: `site.yml`, one `tasks/<area>.yml`
+  per area, files in `files/`. chezmoi's FAQ leaves system config to a config management tool.
+  `system/` is in `.chezmoiignore`.
+- Turning on multilib triggers a full `pacman -Syu` (Arch has no partial upgrades) before the
+  package step. Steam's virtual dependencies (Vulkan, libgl, font) are pinned in `vars/`, since
+  `--noconfirm` would take the first provider.
+- The NPU part runs only where both `/sys/bus/pci/drivers/amdxdna` and `/dev/accel/accel0` exist,
+  so never in Docker. Docker sees the host's `/sys` but can't raise memlock: there the NPU's
+  `limits.d` file makes every `sudo` fail with `pam_open_session: Permission denied`. The laptop's
+  `system-apply --check --diff` covers it. Fingerprint enrolment stays manual (`fprintd-enroll`).
+- The packages the playbook sets up are in `system/vars/<os_family>.yml` (installed first, in one
+  `ansible.builtin.package` call, so names can differ per OS). The general tool lists, AUR packages
+  (yay's sudo needs a terminal, which Ansible doesn't give it), `ansible` itself and user-level setup
+  stay in `.chezmoiscripts`. `ansible`, not `ansible-core`: the pacman module is in community.general.
+- Debian isn't maintained: there the playbook only runs for the borg timer (`vars/Debian.yml` is
+  empty), and the Debian scripts in `.chezmoiscripts` stay as they are.
+- `system-apply` (`dot_local/bin`) runs it with the chezmoi settings it reads (`hyprland`, `backup`,
+  `zsh`) and asks for the sudo password when it has a terminal. `run_onchange_after_system.sh.tmpl`
+  calls it on apply when `system/`, `util/borg-backup/`, `util/sddm-theme/` or those settings
+  change. It sorts before `theme-refresh`, which fills `/var/lib/sddm-theme` once the playbook made it.
+- `system-apply --check --diff` shows what it would change: the drift check `chezmoi diff` can't do
+  for `/etc`.
+- Every task must be idempotent (a second run reports `changed=0`, tested): commands need
+  `creates:` or `changed_when:`. Read-only lookups need `check_mode: false`, or `--check` can't see
+  the system.
+- `--check` only pretends to create folders and unit files, so a task that writes into one (or
+  enables one) made earlier in the same run fails there: give it
+  `when: not (ansible_check_mode and <that task's register> is changed)`. The same goes for
+  packages: when `--check` finds some to install, `previewing_installs` skips the areas that need them.
+- `grub-mkconfig` and the first reflector run are handlers: they run only when their inputs changed,
+  and `grub-mkconfig` only where `/boot/grub/grub.cfg` exists (not in Docker).
+- Tests: `test/run.sh` runs the playbook as part of the fresh install. `60-desktop` and `70-services`
+  check what it set up; `80-system.bats` checks that a second run changes nothing, and the LUKS
+  `allow-discards` edit on stand-in files (Docker has no LUKS root). What Docker can't show (btrfs,
+  LUKS, running services, `grub-mkconfig`): `system-apply --check --diff` on the laptop.
 
 ## Testing a fresh install (Docker)
 - `test/run.sh` builds a vanilla Arch image (`test/Dockerfile`: base + sudo user `sjors` + chezmoi
@@ -104,15 +158,17 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   sort before `install-packages`.
 - `test/out/packages-not-in-dotfiles.txt` lists packages on this machine a reinstall would miss.
 - A package a config calls (waybar click, Hyprland bind, script) must be in the install-packages
-  lists, and a daemon it needs must be in `run_onchange_after_enable-services.sh.tmpl` (a fresh
-  install leaves services off). AUR-only packages (e.g. blueberry) go in the yay step.
+  lists; one the system config sets up goes in `system/vars/Archlinux.yml` instead (`10-packages`
+  checks both). A daemon must be enabled in `system/tasks/services.yml` (a fresh install leaves
+  services off; user units go in `run_onchange_after_enable-user-services.sh.tmpl`). AUR-only
+  packages (e.g. blueberry) go in the yay step.
 
 ## Backups (borg)
 - One-time setup (borgbackup user, keys, repos, `/home/borgbackup/backup_<target>.sh`) is done by the
   `dot_playbooks/` ansible playbooks, run by hand. Not part of `chezmoi apply`.
-- Scheduling is in chezmoi: `util/borg-backup/` (timer, service, runner) is installed into `/etc` and
-  `/usr/local/bin` by `run_onchange_after_install-backup-timer.sh.tmpl` (only when `backup = true`).
-  Schedule: `OnCalendar=` in `borg-backup.timer`.
+- Scheduling: `system/tasks/borg_timer.yml` installs `util/borg-backup/` (timer, service, runner)
+  into `/etc` and `/usr/local/bin` (only when `backup = true`). Schedule: `OnCalendar=` in
+  `borg-backup.timer`.
 - The runner TCP-checks each target's host:port (parsed from `BORG_REPO`) and logs a skip when it's
   unreachable or not set up: `journalctl -u borg-backup -p warning`.
 - The runner writes `/var/lib/borg-backup/<target>.json` (last attempt, result, last success);
@@ -140,10 +196,11 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   Not confirmed on the real box yet: whether it enforces `command=` in `authorized_keys`.
 
 ## Snapshots (timeshift)
-- Daily snapshots (keep 5): `run_onchange_after_setup-timeshift.sh.tmpl` writes
-  `/etc/timeshift/timeshift.json` and `/etc/cron.d/timeshift-hourly` exactly as the GUI's setup does,
-  only when timeshift isn't set up yet (so GUI changes stick) and `/` is btrfs (not in Docker).
-- Timeshift schedules via cron: cronie must be enabled (in enable-services), or nothing happens.
+- Daily snapshots (keep 5): `system/tasks/timeshift.yml` writes `/etc/timeshift/timeshift.json` and
+  `/etc/cron.d/timeshift-hourly` exactly as the GUI's setup does, only when timeshift isn't set up
+  yet (so GUI changes stick) and `/` is btrfs (not in Docker).
+- Timeshift schedules via cron: cronie must be enabled (in `system/tasks/services.yml`), or nothing
+  happens.
 - Pre-upgrade snapshots come from `timeshift-autosnap` (pacman hook, own config in
   `/etc/timeshift-autosnap.conf`, keeps its newest 3). Scheduled and autosnap snapshots never prune
   each other's.

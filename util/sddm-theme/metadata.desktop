@@ -1,0 +1,9 @@
+[SddmGreeterTheme]
+Name=Desktop
+Description=hyprlock's layout in the colours and wallpaper of the desktop theme (theme-set)
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-API=2.0
+QtVersion=6

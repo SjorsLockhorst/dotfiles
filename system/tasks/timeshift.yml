@@ -1,0 +1,75 @@
+# Daily timeshift snapshots (keep 5) on a btrfs root, like finishing the
+# timeshift GUI's setup wizard with "daily" on. Timeshift's own cron job runs
+# `timeshift --check`, which needs cronie (services.yml). Pre-upgrade snapshots
+# come from timeshift-autosnap, separately; neither removes the other's.
+# Only while timeshift isn't set up (by this or the GUI), so GUI changes stick.
+
+- name: Look up timeshift's settings
+  ansible.builtin.slurp:
+    src: /etc/timeshift/timeshift.json
+  register: timeshift_conf
+  failed_when: false
+
+- name: Set up daily snapshots
+  when: (timeshift_conf.content | default('e30=') | b64decode | from_json).do_first_run | default('true') != 'false'
+  block:
+    # On LUKS, timeshift also stores the encrypted partition underneath.
+    - name: Look up the root device and its partition
+      ansible.builtin.shell: |
+        set -euo pipefail
+        dev=$(findmnt -nvo SOURCE /)   # -v: without the [/@] subvolume suffix
+        findmnt -no UUID /
+        if [[ $(lsblk -dno TYPE "$dev") == crypt ]]; then
+            # -s lists the device and what it sits on: root (crypt), nvme0n1p2 (part), ...
+            part=$(lsblk -snro NAME,TYPE "$dev" | awk '$2 == "part" { print $1; exit }')
+            lsblk -dno UUID "/dev/$part"
+        fi
+      args:
+        executable: /bin/bash
+      register: root_device
+      changed_when: false
+      check_mode: false
+
+    - name: Read timeshift's defaults
+      ansible.builtin.slurp:
+        src: /etc/timeshift/default.json
+      register: timeshift_defaults
+
+    # default.json is older than the app: write the keys as the GUI does.
+    - name: Timeshift snapshots / daily, keeps 5
+      ansible.builtin.copy:
+        dest: /etc/timeshift/timeshift.json
+        mode: "0644"
+        content: >-
+          {{ timeshift_defaults.content | b64decode | from_json | dict2items
+             | rejectattr('key', 'equalto', 'include_btrfs_home') | items2dict
+             | combine({
+                 'backup_device_uuid': root_device.stdout_lines[0],
+                 'parent_device_uuid': root_device.stdout_lines[1] | default(''),
+                 'btrfs_mode': 'true', 'do_first_run': 'false',
+                 'schedule_daily': 'true', 'count_daily': '5',
+                 'include_btrfs_home_for_backup': 'false',
+                 'include_btrfs_home_for_restore': 'false',
+                 'date_format': '%Y-%m-%d %H:%M:%S'})
+             | to_nice_json(indent=2) }}
+
+    # What timeshift writes when a schedule is saved in the GUI.
+    - name: Timeshift's hourly check
+      ansible.builtin.copy:
+        src: timeshift-hourly
+        dest: /etc/cron.d/timeshift-hourly
+        mode: "0644"
+
+# timeshift-autosnap is AUR (chezmoi's yay step), which may have failed.
+- name: Look for timeshift-autosnap's settings
+  ansible.builtin.stat:
+    path: /etc/timeshift-autosnap.conf
+  register: autosnap_conf
+
+# grub-btrfsd already adds new snapshots to the GRUB menu (services.yml).
+- name: Pre-upgrade snapshots don't regenerate grub.cfg
+  ansible.builtin.lineinfile:
+    path: /etc/timeshift-autosnap.conf
+    regexp: '^updateGrub='
+    line: updateGrub=false
+  when: autosnap_conf.stat.exists

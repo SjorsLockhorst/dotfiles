@@ -1,0 +1,7 @@
+# zsh as the login shell (path in vars/). The rest of zsh's setup (oh-my-zsh,
+# plugins) is chezmoi's install-ohmyzsh script, which also does this on Debian.
+
+- name: zsh is the login shell
+  ansible.builtin.user:
+    name: "{{ lookup('pipe', 'id -un') }}"
+    shell: "{{ zsh_path }}"

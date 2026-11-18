@@ -12,7 +12,10 @@ setup() {
 }
 
 @test "zsh is the login shell" {
-    [ "$(getent passwd "$(id -un)" | cut -d: -f7)" = "$(command -v zsh)" ]
+    shell=$(getent passwd "$(id -un)" | cut -d: -f7)
+    [ "$(basename "$shell")" = zsh ]
+    # sddm doesn't list users whose shell isn't in /etc/shells
+    grep -qx "$shell" /etc/shells
 }
 
 @test "an interactive zsh starts without errors" {
