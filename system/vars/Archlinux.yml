@@ -4,6 +4,7 @@
 system_packages:
   base:
     - grub-btrfs             # services: snapshots in the GRUB menu (pulls in grub)
+    - inotify-tools          # services: grub-btrfsd watches with inotifywait (optional dep)
     - cronie                 # services: runs timeshift's hourly check
     - timeshift              # timeshift
     - reflector              # reflector

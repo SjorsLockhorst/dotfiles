@@ -2,13 +2,34 @@
 # but off. Started too where systemd runs (not in Docker). User services are
 # in .chezmoiscripts/run_onchange_after_enable-user-services.sh.
 
+# grub-btrfsd watches /.snapshots by default; timeshift keeps its snapshots
+# elsewhere, and --timeshift-auto finds them. Before the services start below.
+- name: grub-btrfsd follows timeshift's snapshots
+  ansible.builtin.copy:
+    src: grub-btrfsd.service.d
+    dest: /etc/systemd/system/
+    mode: "0644"
+    directory_mode: "0755"
+  register: grub_btrfsd_dropin
+
+- name: grub-btrfsd runs with --timeshift-auto
+  ansible.builtin.systemd_service:
+    name: grub-btrfsd.service
+    daemon_reload: true
+    state: restarted
+  when: grub_btrfsd_dropin is changed and systemd_running
+
 - name: Services are enabled
   ansible.builtin.systemd_service:
     name: "{{ item }}"
     enabled: true
-    state: "{{ 'started' if systemd_running else omit }}"
+    state: "{{ 'started' if systemd_running and item not in started_by_hardware else omit }}"
   loop: "{{ base_services + (btrfs_services if root_is_btrfs else []) + (desktop_services if hyprland | bool else []) }}"
   vars:
+    # Started by systemd once the hardware shows up. Without it (a VM, a
+    # desktop without bluetooth) a start does nothing but still counts as a change.
+    started_by_hardware:
+      - bluetooth.service
     base_services:
       - grub-btrfsd.service  # snapshots in the GRUB menu
       - cronie.service       # runs timeshift's hourly snapshot check (timeshift.yml)
