@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
-# Hyprland itself isn't started (the VM has no GPU for it): check that configs parse.
+# That configs parse. Hyprland itself starts in the VM's reboot phase
+# (test/vm/tests/rebooted.bats).
 load helpers
 
 setup() {

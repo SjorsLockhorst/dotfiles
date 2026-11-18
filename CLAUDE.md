@@ -4,6 +4,33 @@ This repo is the **chezmoi source directory** (`~/.local/share/chezmoi`). Files 
 templates/source versions that get **deployed to `$HOME`** by chezmoi. Applications read
 the deployed copies, **not** the files in this repo.
 
+## Open work (as of 2026-11-18; delete an item once it's done)
+In the repo:
+- Run `test/vm/run.sh --save` once: the hyprland phase's renderer test (reads Hyprland's own log)
+  and `test/vm/show.sh` haven't been through a full run yet. The saved VM in
+  `~/.cache/dotfiles-vm/saved/` came from a run where only that test failed.
+- Pin what a fresh install fetches unpinned: the oh-my-zsh installer (`curl | sh` from master),
+  yay (AUR HEAD), vim-plug (master). nvm and the omarchy themes are pinned already.
+- Optional: an ALT passthrough submap in `dot_config/hypr/hyprland.lua` (Hyprland FAQ), so ALT
+  shortcuts reach the VM window of `show.sh`. `mainMod` is ALT; ALT+SHIFT+P and ALT+Escape are
+  free. Test it in the VM first.
+- Optional: Secure Boot with own keys (`sbctl`). The EFI partition (GRUB) is the only unencrypted
+  part; OVMF can test it in the VM.
+
+On the laptop (not in the repo):
+- `chezmoi apply --include=scripts` for the `grub-btrfsd` drop-in, then remove the hand-made
+  `/etc/systemd/system/grub-btrfsd.service`: as a full unit copy it overrides the package's unit.
+- `swaync` starts twice (Hyprland's exec line and D-Bus activation), so `swaync.service` fails:
+  drop `swaync &` from the exec line in `hyprland.lua` and `hyprland.conf`.
+- 46 orphans, 12 of them `-debug` builds: put `OPTIONS=(... !debug ...)` in
+  `~/.config/pacman/makepkg.conf` (could be a dotfile), then `sudo pacman -Rns $(pacman -Qdtq)`
+  after `sudo pacman -D --asexplicit go rustup`.
+- 6 manual timeshift snapshots from 2025 hold a year-old system: keep "After first install",
+  delete the rest.
+- Delete `/etc/pacman.d/mirrorlist.pacnew` (reflector owns the mirrorlist now).
+- Go through `test/out/vm/packages-not-in-dotfiles.txt` (85 packages) before a real reinstall.
+- The home network's first nameserver doesn't answer, so every lookup waits for a timeout.
+
 ## Critical workflow rule
 
 **Editing a file in this repo does NOT change the live config.** The deployed copy under
@@ -117,9 +144,10 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   the environment and refuses to run outside a VM.
 
 ## Testing a reinstall (VM)
-- `test/vm/run.sh [--config <file>] [--base-only] [--remote [url]] [--keep]` (~17 min, `--base-only`
-  ~4): the whole reinstall in QEMU + KVM + OVMF, with an NVMe disk with 4K sectors and a 2880x1920
-  screen like the laptop's. Four phases:
+- `test/vm/run.sh [--config <file>] [--base-only] [--remote [url]] [--save] [--keep]` (~20 min,
+  `--base-only` ~4): the whole reinstall in QEMU + KVM + OVMF (the VM is in `test/vm/lib.sh`), with
+  an NVMe disk with 4K sectors and a 2880x1920 screen like the laptop's. Needs `qemu-desktop`. Five
+  phases:
   - install: the latest Arch ISO (checksum and release signature checked, cached in
     `~/.cache/dotfiles-vm`), `install/install.sh` over SSH (the ISO's cloud-init takes the key).
   - base: boot, type the LUKS passphrase at GRUB on the serial console, `test/vm/tests/base.bats`.
@@ -129,11 +157,25 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
     the working tree.
   - reboot: boot again, `test/vm/tests/rebooted.bats`: what only a real boot shows (TRIM through
     LUKS, GRUB's theme and fonts, the login screen, a timeshift snapshot, the docker group).
+  - hyprland: boot on a virgl GPU, log in (a test-only sddm autologin, removed again), then
+    `test/vm/tests/hyprland.bats`: it renders with virgl, loads the config without errors, waybar
+    runs. Hyprland's wiki calls VMs unsupported and slow: this checks that it works, not how fast.
+- Two GPUs (`qemu_machine` in `lib.sh`): a plain VGA for the first four phases, because QMP can
+  screenshot it and the firmware then runs GRUB at 2880x1920; virgl for Hyprland, which needs 3D
+  acceleration in a VM. QMP can't screenshot what Linux draws on virgl (`no surface`) and the
+  firmware falls back to 1280x800 there, so `desktop.png` comes from `grim` in the session.
+- Hyprland logs to `$XDG_RUNTIME_DIR/hypr/<instance>/hyprland.log`, not the journal; its
+  `Renderer:` line shows virgl (on the host's Radeon) or a software fallback.
 - Debugging: each phase prints ok or FAILED. `test/out/vm/` has every phase's log, the serial
   console, `<phase>-journal.log` and `<phase>-failed-units.log` of every boot, and `grub.png`,
-  `login.png`, `failed.png` at 2880x1920. `--keep` leaves the VM running where it stopped and prints
-  the ssh command. Without it the disk is deleted at the end: after the dotfiles phase it holds the
-  decrypted SSH key.
+  `login.png`, `desktop.png`, `failed.png` at 2880x1920. `--keep` leaves the VM running where it
+  stopped and prints the ssh command. Without it the disk is deleted at the end: after the dotfiles
+  phase it holds the decrypted SSH key.
+- `--save` keeps a fully passing VM in `~/.cache/dotfiles-vm/saved/` (mode 700; ~9 GB; it holds the
+  decrypted SSH key and the age key, as the laptop does). `test/vm/show.sh` boots it in a window
+  (GTK, virgl) and types the LUKS passphrase; log in with the install user and `vm-test-user`. A
+  session runs on a throwaway qcow2 layer unless `--persist`. Inside Hyprland, the host's Hyprland
+  takes SUPER shortcuts first (Hyprland FAQ: a passthrough submap).
 - The apply runs with stdin `/dev/null`, so any script that prompts fails instead of hanging: use
   `--noconfirm` / `set -e` in `.chezmoiscripts`. It's capped at 60m (`APPLY_TIMEOUT`).
 - `test/out/vm/packages-not-in-dotfiles.txt` lists packages on this machine a reinstall would miss

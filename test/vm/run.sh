@@ -1,6 +1,7 @@
 #!/bin/bash
-# A reinstall of this laptop in a UEFI VM (QEMU + OVMF, an NVMe disk with 4K
-# sectors like the Framework's), from the latest Arch ISO, in four phases:
+# A reinstall of this laptop in a UEFI VM (QEMU + OVMF; an NVMe disk with 4K
+# sectors and the 2880x1920 screen of the Framework), from the latest Arch ISO,
+# in five phases:
 #   install   install/install.sh with a config, over SSH (the ISO's cloud-init
 #             takes our key)
 #   base      boot it, typing the LUKS passphrase at GRUB on the serial
@@ -8,37 +9,40 @@
 #   dotfiles  chezmoi init --apply, then test/tests (test/vm/dotfiles.sh)
 #   reboot    boot again, then test/vm/tests/rebooted.bats: what only a real
 #             boot shows (TRIM through LUKS, GRUB's theme, the login screen)
+#   hyprland  boot on a virgl GPU (Hyprland needs 3D acceleration in a VM), log
+#             in, then test/vm/tests/hyprland.bats
 #
-# Usage: test/vm/run.sh [--config <file>] [--base-only] [--remote [url]] [--keep]
+# Usage: test/vm/run.sh [--config <file>] [--base-only] [--remote [url]] [--save] [--keep]
 #   --config     the install config (default: install/fw13.conf)
 #   --base-only  stop after the base phase
 #   --remote     the dotfiles from the pushed repo (default: GitHub) instead of
 #                the working tree
+#   --save       when everything passes, shut the VM down and keep it for
+#                test/vm/show.sh (replaces the last saved one)
 #   --keep       leave the VM running at the end, or where it failed (the
 #                command to get in is printed); stop it with
 #                python3 test/vm/vm.py qmp test/out/vm/qmp.sock quit
 #
 # test/out/vm/ gets each phase's log, the serial console, the journal and
-# failed units of every boot, and screenshots: grub.png, login.png, and
-# failed.png when something fails. Needs qemu-base, edk2-ovmf, libisoburn,
-# KVM and the age key. The ISO is cached in ~/.cache/dotfiles-vm.
+# failed units of every boot, and screenshots: grub.png, login.png,
+# desktop.png, and failed.png when something fails. Needs qemu-desktop,
+# edk2-ovmf, libisoburn, KVM and the age key. The ISO is cached in
+# ~/.cache/dotfiles-vm.
 set -euo pipefail
 
 VM_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$VM_DIR/../.." && pwd)
+# shellcheck source=lib.sh
+source "$VM_DIR/lib.sh"
 OUT=$REPO/test/out/vm
-CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-vm
+SSH_KEY=$OUT/id_ed25519
 KEY=$HOME/.config/chezmoi/key.txt
 MIRROR=https://geo.mirror.pkgbuild.com/iso
-OVMF=/usr/share/edk2/x64
-SSH_PORT=2222
-# Throwaway secrets for a throwaway VM
-LUKS_PASSPHRASE=vm-test-luks
-USER_PASSWORD=vm-test-user
 
 config=$REPO/install/fw13.conf
 base_only=0
 remote=
+save=0
 keep=0
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -47,8 +51,9 @@ while [[ $# -gt 0 ]]; do
         --remote)
             if [[ ${2:-} && $2 != --* ]]; then remote=$2; shift
             else remote=https://github.com/SjorsLockhorst/dotfiles.git; fi ;;
+        --save) save=1 ;;
         --keep) keep=1 ;;
-        -h|--help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
+        -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
     esac
     shift
@@ -56,11 +61,8 @@ done
 encryption=$(source "$config"; echo "$ENCRYPTION")
 user=$(source "$config"; echo "$USERNAME")
 [[ -f $KEY ]] || { echo "No age key at $KEY" >&2; exit 1; }
-if pgrep -f '^qemu-system-x86_64 -name dotfiles-vm-' >/dev/null; then
-    echo "A test VM is still running (an earlier --keep?). Stop it with:" >&2
-    echo "  python3 $VM_DIR/vm.py qmp $OUT/qmp.sock quit" >&2
-    exit 1
-fi
+require_virgl
+refuse_if_running
 
 rm -rf "$OUT"
 mkdir -p "$OUT" "$CACHE"
@@ -81,7 +83,7 @@ cleanup() {
         fi
     fi
     if vm_running && [[ $keep == 1 ]]; then
-        echo "==> The VM keeps running: ssh -i $OUT/id_ed25519 -p $SSH_PORT $login@127.0.0.1"
+        echo "==> The VM keeps running: ssh -i $SSH_KEY -p $SSH_PORT $login@127.0.0.1"
     else
         if vm_running; then kill "$QEMU_PID"; wait "$QEMU_PID" 2>/dev/null || true; fi
         # After the dotfiles phase this disk holds the decrypted SSH key.
@@ -123,46 +125,30 @@ fetch_iso() {
 
 # The ISO's cloud-init reads a CIDATA volume: here only our SSH key for root.
 make_cidata() {
-    ssh-keygen -q -t ed25519 -N '' -C vm-test -f "$OUT/id_ed25519"
+    ssh-keygen -q -t ed25519 -N '' -C vm-test -f "$SSH_KEY"
     mkdir "$OUT/cidata"
     : >"$OUT/cidata/meta-data" # NoCloud ignores the volume without it
     printf '#cloud-config\nusers:\n  - name: root\n    ssh_authorized_keys:\n      - %s\n' \
-        "$(cat "$OUT/id_ed25519.pub")" >"$OUT/cidata/user-data"
+        "$(cat "$SSH_KEY.pub")" >"$OUT/cidata/user-data"
     xorriso -as genisoimage -output "$OUT/cidata.iso" -V CIDATA -J -r "$OUT/cidata" 2>"$OUT/cidata.log"
 }
 
-# start_vm <name> [qemu args]: the Framework stand-in, in the background.
-# NVMe with 4K sectors like the laptop's disk, and its own UEFI variables, so
-# the boot entry grub-install makes is what boots it next time (no bootindex on
-# the disk, which would override that). The screen is the laptop's 2880x1920.
-# No PXE ROM on the network card.
+# start_vm <name> <vga|virgl> [qemu args]: the VM of lib.sh, without a window,
+# in the background
 start_vm() {
-    local name=$1
-    shift
-    qemu-system-x86_64 -name "dotfiles-vm-$name" \
-        -machine q35,accel=kvm -cpu host -smp 8 -m 8G \
-        -drive if=pflash,format=raw,readonly=on,file="$OVMF/OVMF_CODE.4m.fd" \
-        -drive if=pflash,format=raw,file="$OUT/vars.fd" \
-        -drive file="$OUT/disk.qcow2",if=none,id=disk,discard=unmap \
-        -device nvme,drive=disk,serial=fw13,logical_block_size=4096,physical_block_size=4096 \
-        -netdev user,id=net,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22 \
-        -device virtio-net-pci,netdev=net,romfile= \
-        -display none -device VGA,xres=2880,yres=1920,vgamem_mb=32 \
-        -qmp unix:"$OUT/qmp.sock",server=on,wait=off \
+    local name=$1 gpu=$2 display=none
+    shift 2
+    [[ $gpu == vga ]] || display=egl-headless
+    qemu_machine "$OUT/disk.qcow2" "$OUT/vars.fd" "$OUT/qmp.sock" "$gpu"
+    qemu-system-x86_64 -name "dotfiles-vm-$name" "${QEMU_MACHINE[@]}" -display "$display" \
         "$@" >"$OUT/$name-qemu.log" 2>&1 &
     QEMU_PID=$!
-}
-
-vm_ssh() {
-    ssh -q -i "$OUT/id_ed25519" -p "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=5 \
-        -o ServerAliveInterval=30 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-        "$login@127.0.0.1" "$@"
 }
 
 vm_scp() {
     local dest=$1
     shift
-    scp -q -r -i "$OUT/id_ed25519" -P "$SSH_PORT" -o BatchMode=yes \
+    scp -q -r -i "$SSH_KEY" -P "$SSH_PORT" -o BatchMode=yes \
         -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$@" "$login@127.0.0.1:$dest"
 }
 
@@ -175,13 +161,28 @@ wait_ssh() {
     done
 }
 
-# GRUB asks the passphrase to read /boot (the initramfs then uses the keyfile).
-# Its menu shows for GRUB_TIMEOUT (5s) once the slot opened: screenshot it.
+# shut_down: power off cleanly and wait for QEMU to exit (root on the ISO
+# may have no sudo)
+shut_down() {
+    vm_ssh "sudo -n poweroff 2>/dev/null || poweroff" 2>/dev/null || true
+    local start=$SECONDS
+    while vm_running; do
+        ((SECONDS - start < 120)) || { echo "    still running 120s after poweroff"; return 1; }
+        sleep 2
+    done
+    QEMU_PID=
+}
+
+# unlock [screenshot]: GRUB asks the passphrase to read /boot (the initramfs
+# then uses the keyfile). Its menu shows for GRUB_TIMEOUT (5s) once the slot
+# opened: the moment for a screenshot.
 unlock() {
     python3 "$VM_DIR/vm.py" type "$OUT/serial.sock" --wait 'Enter passphrase' \
         --text "$LUKS_PASSPHRASE" --then 'Slot "[0-9]+" opened' --timeout 300 || return 1
-    sleep 2
-    screenshot grub
+    if [[ -n ${1:-} ]]; then
+        sleep 2
+        screenshot "$1"
+    fi
 }
 
 # collect <name>: the journal and failed units of the running boot
@@ -195,9 +196,43 @@ run_bats() {
     vm_ssh "bats --print-output-on-failure --timing $2" | tee "$OUT/$1-tests.log"
 }
 
+# Log in to Hyprland as the login screen would: a test-only autologin, removed
+# again once Hyprland runs, so a saved state still shows the login screen.
+log_in_to_hyprland() {
+    local conf=/etc/sddm.conf.d/99-vm-test-autologin.conf start=$SECONDS
+    vm_ssh "printf '[Autologin]\nUser=%s\nSession=hyprland-uwsm.desktop\n' $user \
+        | sudo tee $conf >/dev/null && sudo systemctl restart sddm" || return 1
+    until vm_ssh "hyprctl -i 0 version" >/dev/null 2>&1; do
+        if ((SECONDS - start > 120)); then
+            echo "    Hyprland didn't start within 120s"
+            vm_ssh "sudo rm -f $conf"
+            return 1
+        fi
+        sleep 3
+    done
+    vm_ssh "sudo rm $conf" || return 1
+    # waybar and the wallpaper come up a few seconds after Hyprland. QMP can't
+    # screenshot a virgl screen: grim in the session can.
+    sleep 10
+    vm_ssh 'WAYLAND_DISPLAY=$(basename "$(ls -d "$XDG_RUNTIME_DIR"/wayland-? | head -1)") grim -' \
+        >"$OUT/desktop.png" || true
+}
+
+# The VM as the passing run left it, for show.sh
+save_state() {
+    echo "==> save: shut down and keep the VM for test/vm/show.sh"
+    shut_down || return 1
+    rm -rf "$SAVED"
+    mkdir -p -m 700 "$SAVED"
+    mv "$OUT/disk.qcow2" "$OUT/vars.fd" "$SSH_KEY" "$SSH_KEY.pub" "$SAVED/"
+    cp "$config" "$SAVED/install.conf"
+    git -C "$REPO" describe --always --dirty >"$SAVED/revision"
+    echo "    $SAVED ($(du -h "$SAVED/disk.qcow2" | cut -f1), dotfiles $(cat "$SAVED/revision")): test/vm/show.sh"
+}
+
 install_phase() {
     phase install "install/install.sh $(basename "$config") from $(basename "$ISO")"
-    start_vm install \
+    start_vm install vga \
         -drive file="$ISO",media=cdrom,if=none,id=iso,readonly=on -device ide-cd,drive=iso,bus=ide.0,bootindex=0 \
         -drive file="$OUT/cidata.iso",media=cdrom,if=none,id=cidata,readonly=on -device ide-cd,drive=cidata,bus=ide.1 \
         -chardev socket,id=serial,path="$OUT/serial.sock",server=on,wait=off,logfile="$OUT/install-serial.log" \
@@ -209,34 +244,34 @@ install_phase() {
     vm_ssh "resolvectl dns \$(ip -o route show default | awk '{print \$5; exit}') $dns"
     mkdir "$OUT/hook"
     cp "$VM_DIR/hook/run" "$OUT/hook/"
-    cp "$OUT/id_ed25519.pub" "$OUT/hook/test-key.pub"
+    cp "$SSH_KEY.pub" "$OUT/hook/test-key.pub"
     echo "$dns" >"$OUT/hook/dns"
     vm_scp /root/ "$REPO/install" "$OUT/hook"
     vm_scp /root/install.conf "$config"
     vm_ssh "LUKS_PASSPHRASE=$LUKS_PASSPHRASE USER_PASSWORD=$USER_PASSWORD \
         /root/install/install.sh --unattended --post-install /root/hook /root/install.conf" \
         >"$OUT/install.log" 2>&1 || { tail -20 "$OUT/install.log"; return 1; }
-    vm_ssh poweroff || true
-    local start=$SECONDS
-    while vm_running; do
-        ((SECONDS - start < 120)) || { echo "    still running 120s after poweroff"; return 1; }
-        sleep 2
-    done
+    shut_down
     phase_ok
+}
+
+# boot_vm <name> <vga|virgl>: start the installed system and get it past GRUB
+boot_vm() {
+    if [[ $encryption == luks ]]; then
+        # wait=on: QEMU starts once vm.py listens, so it can't miss GRUB's prompt.
+        start_vm "$1" "$2" \
+            -chardev socket,id=serial,path="$OUT/serial.sock",server=on,wait=on,logfile="$OUT/$1-serial.log" \
+            -serial chardev:serial
+        unlock
+    else
+        start_vm "$1" "$2" -serial file:"$OUT/$1-serial.log"
+    fi
 }
 
 base_phase() {
     phase base "boot the installed system, test/vm/tests/base.bats"
     login=$user
-    if [[ $encryption == luks ]]; then
-        # wait=on: QEMU starts once vm.py listens, so it can't miss GRUB's prompt.
-        start_vm boot \
-            -chardev socket,id=serial,path="$OUT/serial.sock",server=on,wait=on,logfile="$OUT/boot-serial.log" \
-            -serial chardev:serial
-        unlock
-    else
-        start_vm boot -serial file:"$OUT/boot-serial.log"
-    fi
+    boot_vm boot vga
     wait_ssh 300
     vm_ssh mkdir -p vm-tests
     vm_scp vm-tests/ "$VM_DIR/tests"
@@ -260,7 +295,7 @@ dotfiles_phase() {
         && sudo install -D -m 600 -o $user /dev/stdin /run/secrets/key.txt \
         && sudo ln -sfn /src/test/tests /tests" <"$KEY" || return 1
     tar -C "$REPO" --exclude=./test/out -cf - . | vm_ssh "tar -C /src -xf -" || return 1
-    echo "    takes ~20 min; follow it with: tail -f $OUT/dotfiles.log"
+    echo "    takes ~15 min; follow it with: tail -f $OUT/dotfiles.log"
     vm_ssh "CHEZMOI_EMAIL='$email' CHEZMOI_PROMPT_BOOL='$prompt_bool' DOTFILES_REMOTE='$remote' \
         bash /src/test/vm/dotfiles.sh" >"$OUT/dotfiles.log" 2>&1 || status=$?
     mkdir -p "$OUT/dotfiles"
@@ -283,7 +318,7 @@ reboot_phase() {
     phase reboot "boot again, test/vm/tests/rebooted.bats"
     if [[ $encryption == luks ]]; then
         # Listen for GRUB's prompt before the reboot starts
-        unlock &
+        unlock grub &
         local unlocker=$!
         # The reboot cuts this SSH session: that's expected
         vm_ssh "sudo systemctl reboot" 2>/dev/null || true
@@ -303,6 +338,18 @@ reboot_phase() {
     phase_ok
 }
 
+# Runs with errexit off (called with ||): every step checks its own status.
+hyprland_phase() {
+    phase hyprland "boot on a virgl GPU, log in to Hyprland, test/vm/tests/hyprland.bats"
+    shut_down || return 1
+    boot_vm hyprland virgl || return 1
+    wait_ssh 300 || return 1
+    log_in_to_hyprland || return 1
+    collect hyprland || return 1
+    run_bats hyprland vm-tests/tests/hyprland.bats || return 1
+    phase_ok
+}
+
 phase setup "ISO, cloud-init volume, empty disk"
 fetch_iso
 make_cidata
@@ -318,5 +365,7 @@ base_phase
 failed=()
 dotfiles_phase || failed+=(dotfiles)
 if vm_running; then reboot_phase || failed+=(reboot); else failed+=(reboot); fi
+if vm_running; then hyprland_phase || failed+=(hyprland); else failed+=(hyprland); fi
 PHASE=done
 [[ ${#failed[@]} == 0 ]] || { vm_running && screenshot failed; echo "==> FAILED: ${failed[*]}"; exit 1; }
+[[ $save == 0 ]] || save_state
