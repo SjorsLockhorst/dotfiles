@@ -4,7 +4,7 @@ This repo is the **chezmoi source directory** (`~/.local/share/chezmoi`). Files 
 templates/source versions that get **deployed to `$HOME`** by chezmoi. Applications read
 the deployed copies, **not** the files in this repo.
 
-## Open work (as of 2026-11-18; delete an item once it's done)
+## Open work (as of 2026-11-19; delete an item once it's done)
 In the repo:
 - Run `test/vm/run.sh --save` once: the hyprland phase's renderer test (reads Hyprland's own log)
   and `test/vm/show.sh` haven't been through a full run yet. The saved VM in
@@ -18,17 +18,16 @@ In the repo:
   part; OVMF can test it in the VM.
 
 On the laptop (not in the repo):
-- `chezmoi apply` (in a terminal: the playbook asks for sudo) for the `passwd` line of
-  `system/tasks/keyring.yml`. Once a password login shows no keyring prompt, delete the backup
-  `~/.local/share/keyrings.bak-2026-11-19` (the keyrings before the merge).
-- `chezmoi apply --include=scripts` for the `grub-btrfsd` drop-in, then remove the hand-made
-  `/etc/systemd/system/grub-btrfsd.service`: as a full unit copy it overrides the package's unit.
-- 46 orphans, 12 of them `-debug` builds: put `OPTIONS=(... !debug ...)` in
-  `~/.config/pacman/makepkg.conf` (could be a dotfile), then `sudo pacman -Rns $(pacman -Qdtq)`
-  after `sudo pacman -D --asexplicit go rustup`.
+- Once a password login shows no keyring prompt, delete the backup
+  `~/.local/share/keyrings.bak-2026-11-19` (the keyrings before the merge). The `passwd` line of
+  `system/tasks/keyring.yml` is applied.
+- Check that the first btrfs scrub (the timer fired 2026-11-18 18:01) finished:
+  `sudo journalctl -u btrfs-scrub@-.service`. `/var/lib/btrfs` didn't exist on 2026-11-19.
+- Orphans were removed on 2026-11-19 (`go`, `rustup`, `yarn` marked explicit). Stop `-debug`
+  builds from coming back: `OPTIONS=(... !debug ...)` in `~/.config/pacman/makepkg.conf` (could be
+  a dotfile).
 - 6 manual timeshift snapshots from 2025 hold a year-old system: keep "After first install",
   delete the rest.
-- Delete `/etc/pacman.d/mirrorlist.pacnew` (reflector owns the mirrorlist now).
 - Go through `test/out/vm/packages-not-in-dotfiles.txt` (85 packages) before a real reinstall.
 - The home network's first nameserver doesn't answer, so every lookup waits for a timeout.
 
@@ -65,6 +64,13 @@ your tests will silently reflect the un-applied version.
 
 > Note: `chezmoi diff <source-path>` reports "not managed" — it expects a **target** (deployed)
 > path, not the repo-relative source path. Use `chezmoi diff` with no args, or pass a `~/...` path.
+
+### Files an app rewrites itself
+Managing the whole file makes every apply ask "has changed since chezmoi last wrote it". Such files
+are `modify_` entries instead: chezmoi gets the live file on stdin and only sets the keys it owns
+(no prompt; a hand edit to an owned key is put back). `dot_claude/modify_settings.json` (a jq
+script: Claude Code's key order stays) and `dot_config/btop/modify_btop.conf` (a template: the
+`chezmoi:modify-template` line inside, and no `.tmpl` suffix, or `.chezmoi.stdin` is missing).
 
 ## State that lives OUTSIDE this repo (not chezmoi-managed)
 Some runtime state affects behavior but is not in this repo, so it won't move with `apply`:
