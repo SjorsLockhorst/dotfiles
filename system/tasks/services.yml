@@ -35,6 +35,7 @@
       - cronie.service       # runs timeshift's hourly snapshot check (timeshift.yml)
       - reflector.timer      # refreshes the mirrorlist weekly (reflector.yml)
       - paccache.timer       # keeps the 3 newest versions of each package in the cache
+      - systemd-timesyncd.service  # keeps the clock right over NTP (timedatectl set-ntp true)
     btrfs_services:
       - btrfs-scrub@-.timer  # monthly checksum scrub of /
     # sddm: login screen. NetworkManager: nm-applet/waybar-vpn. bluetooth:

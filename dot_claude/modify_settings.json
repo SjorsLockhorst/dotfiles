@@ -1,8 +1,12 @@
+#!/bin/sh
+# Claude Code writes this file itself (model, effort, plugins, auto mode), so
+# chezmoi only sets the hooks and turns on the plugins below, and leaves the
+# rest as it is. chezmoi runs this with the live file on stdin and writes what
+# it prints: no "changed since chezmoi last wrote it" prompt. jq keeps Claude
+# Code's key order. Change these here: a hand edit to them is put back on apply.
+set -eu
+managed='
 {
-  "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
-  },
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -44,5 +48,13 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
   }
 }
+'
+current=$(cat)
+printf '%s\n' "${current:-{\}}" |
+    jq --argjson m "$managed" '.hooks = $m.hooks | .enabledPlugins += $m.enabledPlugins'

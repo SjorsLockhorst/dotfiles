@@ -12,7 +12,9 @@ enabled_and_running() {
 }
 
 @test "base services and timers are enabled and running" {
-    enabled_and_running grub-btrfsd.service cronie.service reflector.timer paccache.timer
+    enabled_and_running grub-btrfsd.service cronie.service reflector.timer paccache.timer \
+        systemd-timesyncd.service
+    [ "$(timedatectl show -p NTP --value)" = yes ]
 }
 
 @test "a btrfs root gets a monthly scrub" {
