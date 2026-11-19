@@ -34,6 +34,21 @@ hl.config({
     },
 })
 
+-- With an external monitor connected, workspaces 1, 3 and 4 go on it and 2 stays on the laptop
+-- (start-workspaces, ALT+SHIFT+W, opens a terminal, Slack, Zen and Obsidian on them).
+-- With two, the landscape one wins over a rotated one.
+-- pcall: an error there must not cost the rest of this file (the keybindings).
+local ws_ok, ws_err = pcall(function()
+    dofile(os.getenv("HOME") .. "/.config/hypr/workspaces.lua").setup({
+        laptop              = "eDP-1",
+        laptop_workspaces   = { 2 },
+        external_workspaces = { 1, 3, 4 },
+    })
+end)
+if not ws_ok then
+    hl.notification.create({ text = "workspaces.lua: " .. tostring(ws_err), timeout = 10000, icon = 3 })
+end
+
 
 ---------------------
 ---- MY PROGRAMS ----
@@ -235,6 +250,8 @@ hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("pkill -SIGUSR1 -x waybar")) 
 
 -- TODO: Make this more modular so we can spinn up also other shells easily
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd([[kitty $SHELL -i -c "start-core-ai; exec $SHELL"]], { workspace = "1" }))
+-- Terminal on 1, Slack on 2, Zen on 3, Obsidian on 4 (moves them there when already open)
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("$HOME/.local/bin/start-workspaces"))
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })

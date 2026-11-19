@@ -66,6 +66,17 @@ setup() {
     done
 }
 
+@test "the login screen opens the keyring, and passwd keeps its password in step" {
+    # From the sddm package: the typed password unlocks the "login" keyring
+    grep -qE '^-?auth\s+optional\s+pam_gnome_keyring\.so' /etc/pam.d/sddm
+    grep -qE '^-?session\s+optional\s+pam_gnome_keyring\.so\s+auto_start' /etc/pam.d/sddm
+    # After the include that changes the password: it reads the old and new one
+    kr=$(grep -n -m1 -E '^-?password\s+optional\s+pam_gnome_keyring\.so' /etc/pam.d/passwd | cut -d: -f1)
+    inc=$(grep -n -m1 -E '^password\s+include' /etc/pam.d/passwd | cut -d: -f1)
+    echo "passwd: pam_gnome_keyring on line ${kr:-none}, include on line $inc"
+    [ -n "$kr" ] && [ "$kr" -gt "$inc" ]
+}
+
 @test "Steam's multilib repo is on" {
     pacman-conf --repo-list | grep -qx multilib
 }

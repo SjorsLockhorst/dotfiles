@@ -1,0 +1,60 @@
+#!/bin/bash
+# Open the work apps on their workspaces (ALT+SHIFT+W): a terminal on 1, Slack on 2, Zen on 3,
+# Obsidian on 4. An app that's already open is moved to its workspace instead of started again,
+# so running this twice is harmless. Nothing takes focus.
+# Which monitor each workspace is on is up to ~/.config/hypr/workspaces.lua (set up in hyprland.lua).
+
+set -euo pipefail
+
+# workspace | window class (regex, any case) | command | move: an open window elsewhere is moved
+# here (no: start another one, for the terminal)
+apps=(
+    "1|^kitty$|kitty|no"
+    "2|^slack$|slack|yes"
+    "3|^zen|zen-browser|yes"
+    "4|obsidian|obsidian|yes"
+)
+
+notify() { notify-send -a start-workspaces "start-workspaces" "$1" || echo "start-workspaces: $1" >&2; }
+
+# "<address> <workspace>" of a window whose class matches $1, one on workspace $2 first.
+find_window() {
+    hyprctl clients -j | jq -r --arg re "$1" --arg ws "$2" '
+        [.[] | select(.class | test($re; "i"))] | sort_by(.workspace.name != $ws)
+        | first // empty | "\(.address) \(.workspace.name)"'
+}
+
+move_window() {  # address, workspace
+    hyprctl dispatch "hl.dsp.window.move({ window = \"address:$1\", workspace = \"$2\", follow = false })" >/dev/null
+}
+
+open_on() {
+    local ws=$1 class=$2 cmd=$3 move=$4 win
+    win=$(find_window "$class" "$ws")
+    if [[ -n $win && ( ${win#* } == "$ws" || $move == yes ) ]]; then
+        [[ ${win#* } == "$ws" ]] || move_window "${win%% *}" "$ws"
+        return
+    fi
+
+    command -v "${cmd%% *}" >/dev/null || { notify "$cmd is not installed"; return; }
+    hyprctl dispatch "hl.dsp.exec_cmd(\"$cmd\", { workspace = \"$ws silent\" })" >/dev/null
+    [[ $move == yes ]] || return 0
+
+    # The rule above only reaches a window of the process it starts. An app that's already running
+    # without a window (Slack in the tray) opens one from its own process, on the current workspace.
+    for _ in {1..120}; do
+        win=$(find_window "$class" "$ws")
+        if [[ -n $win ]]; then
+            [[ ${win#* } == "$ws" ]] || move_window "${win%% *}" "$ws"
+            return
+        fi
+        sleep 0.5
+    done
+    notify "no $cmd window after 60 seconds"
+}
+
+for app in "${apps[@]}"; do
+    IFS='|' read -r ws class cmd move <<< "$app"
+    open_on "$ws" "$class" "$cmd" "$move" &
+done
+wait

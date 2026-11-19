@@ -18,6 +18,9 @@ In the repo:
   part; OVMF can test it in the VM.
 
 On the laptop (not in the repo):
+- `chezmoi apply` (in a terminal: the playbook asks for sudo) for the `passwd` line of
+  `system/tasks/keyring.yml`. Once a password login shows no keyring prompt, delete the backup
+  `~/.local/share/keyrings.bak-2026-11-19` (the keyrings before the merge).
 - `chezmoi apply --include=scripts` for the `grub-btrfsd` drop-in, then remove the hand-made
   `/etc/systemd/system/grub-btrfsd.service`: as a full unit copy it overrides the package's unit.
 - `swaync` starts twice (Hyprland's exec line and D-Bus activation), so `swaync.service` fails:
@@ -117,6 +120,40 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   the journal, not stderr). Keyboard layout and power buttons stay hidden in test mode.
 - `qmllint Main.qml` (`/usr/lib/qt6/bin`) exits non-zero only on real errors; the "unqualified"
   warnings are the greeter's injected `sddm`/`config`/`userModel`.
+
+## Keyring (gnome-keyring)
+- The password typed at the login screen unlocks the keyring named `login` (`pam_gnome_keyring`
+  in the sddm package's `/etc/pam.d/sddm`). A fingerprint login (Enter, then the finger) gives it no
+  password: the keyring stays locked and the first app that wants a secret prompts. hyprlock
+  doesn't lock it again, so the fingerprint is fine there and for sudo.
+- Keep ONE keyring, `login`, as the default (`~/.local/share/keyrings/default`). Any other keyring
+  is never unlocked at login and prompts every session: this machine had a `Default` one (browsers'
+  Safe Storage keys, Nextcloud, Proton, ...), merged into `login` on 2026-11-19 by copying each
+  item over the Secret Service API (`python-secretstorage`). Apps find their secrets by attributes,
+  not by keyring.
+- `passwd` changes the keyring's password too (`system/tasks/keyring.yml`). A password changed
+  another way leaves the keyring on the old one: then it prompts after every login.
+- Diagnosing: gcr-prompter logs `starting password prompt` to the user journal, once per prompt.
+  `alpaca` asks for secrets before Hyprland is up; that prompt fails (`cannot open display`) harmlessly.
+
+## Hyprland (Lua config)
+- Hyprland 0.57 loads `dot_config/hypr/hyprland.lua` (its log says which file). The `hl.*` API's
+  reference is `/usr/share/hypr/stubs/hl.meta.lua`; the wiki is often vague on argument names.
+- Try Lua live: `hyprctl repl '<code>'` (prints the result), `hyprctl dispatch 'hl.dsp...(...)'`.
+- Test without touching the running session: start a nested one hidden on a special workspace,
+  `hyprctl dispatch 'hl.dsp.exec_cmd("Hyprland -c <test.lua>", { workspace = "special:nested silent" })'`,
+  talk to it with `hyprctl -i <instance>` (`hyprctl instances`), add and remove fake monitors with
+  `hyprctl -i <instance> output create headless` / `output remove HEADLESS-<n>`.
+- Workspaces per monitor: `workspaces.lua`, set up from `hyprland.lua` (1, 3, 4 on an external
+  monitor, 2 on `eDP-1`), on config load and on `monitor.added`/`monitor.removed`.
+  `start-workspaces` (ALT+SHIFT+W) opens the apps on them. A second `hl.workspace_rule` for a
+  workspace updates its enabled rule; after `set_enabled(false)` it adds another one.
+- `chezmoi apply` writes `hyprland.lua` before a new file it `dofile`s, and Hyprland reloads on
+  the first write: an error there skips the rest of the file (all keybindings). Wrap such a
+  `dofile` in `pcall` (as for `workspaces.lua`) or `hyprctl reload` after the apply.
+- An exec rule (`hl.dsp.exec_cmd(cmd, { workspace = "3 silent" })`) only reaches windows of the
+  process it starts; a window an already-running app opens lands on the current workspace.
+- Window classes: Slack `slack`, Zen `zen`, Obsidian `md.obsidian.Obsidian`.
 
 ## Waybar
 - Two bars in `dot_config/waybar/config` (compact on `eDP-1`, full on `!eDP-1`); module

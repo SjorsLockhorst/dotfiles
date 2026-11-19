@@ -117,6 +117,10 @@
       ansible.builtin.import_tasks: tasks/fingerprint.yml
       when: is_arch and hyprland | bool and not previewing_installs
 
+    - name: Keyring
+      ansible.builtin.import_tasks: tasks/keyring.yml
+      when: is_arch and hyprland | bool and not previewing_installs
+
     - name: NPU
       ansible.builtin.import_tasks: tasks/npu.yml
       when: is_arch and npu_present

@@ -21,6 +21,7 @@ system_packages:
     - tailscale              # services
     - docker                 # services: docker.socket, the docker group
     - fprintd                # fingerprint
+    - gnome-keyring          # keyring: the secret store the login screen unlocks
     # Steam, from multilib (site.yml turns it on). Its virtual dependencies
     # pinned to this AMD laptop's: --noconfirm would take the first provider.
     - steam

@@ -22,6 +22,13 @@ setup() {
     jq -e 'map(select(length > 0)) | length == 0' <<<"$output"
 }
 
+@test "workspaces.lua binds workspaces 1-4 to monitors" {
+    # Its errors don't show in configerrors: hyprland.lua catches them to keep the keybindings
+    run hyprctl -i 0 -j workspacerules
+    echo "$output"
+    jq -e '["1", "2", "3", "4"] - [.[] | select(.monitor) | .workspaceString] == []' <<<"$output"
+}
+
 @test "waybar is up" {
     pgrep -u "$USER" -x waybar
 }

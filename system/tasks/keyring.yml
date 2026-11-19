@@ -1,0 +1,12 @@
+# The secret store (gnome-keyring) is opened by the password typed at the login
+# screen: the sddm package's /etc/pam.d/sddm hands it to the "login" keyring.
+# That only works while the keyring's password is the account's, so passwd
+# changes both. Run as root for another user, it can't (no old password) and
+# leaves the keyring alone.
+
+- name: passwd changes the login keyring's password too
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/passwd
+    regexp: '^-?password\s+optional\s+pam_gnome_keyring\.so'
+    line: "-password\toptional\tpam_gnome_keyring.so use_authtok"
+    insertafter: EOF
