@@ -23,8 +23,6 @@ On the laptop (not in the repo):
   `~/.local/share/keyrings.bak-2026-11-19` (the keyrings before the merge).
 - `chezmoi apply --include=scripts` for the `grub-btrfsd` drop-in, then remove the hand-made
   `/etc/systemd/system/grub-btrfsd.service`: as a full unit copy it overrides the package's unit.
-- `swaync` starts twice (Hyprland's exec line and D-Bus activation), so `swaync.service` fails:
-  drop `swaync &` from the exec line in `hyprland.lua` and `hyprland.conf`.
 - 46 orphans, 12 of them `-debug` builds: put `OPTIONS=(... !debug ...)` in
   `~/.config/pacman/makepkg.conf` (could be a dotfile), then `sudo pacman -Rns $(pacman -Qdtq)`
   after `sudo pacman -D --asexplicit go rustup`.
@@ -139,6 +137,10 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
 ## Hyprland (Lua config)
 - Hyprland 0.57 loads `dot_config/hypr/hyprland.lua` (its log says which file). The `hl.*` API's
   reference is `/usr/share/hypr/stubs/hl.meta.lua`; the wiki is often vague on argument names.
+- There is no `hyprland.conf` (removed via `.chezmoiremove`): with both, Hyprland loads the `.lua`
+  and the `.conf` is dead weight that still got edited.
+- Don't start swaync from the exec line: D-Bus starts `swaync.service` on first use, and both at
+  once leave the unit failed (`start-limit-hit`).
 - Try Lua live: `hyprctl repl '<code>'` (prints the result), `hyprctl dispatch 'hl.dsp...(...)'`.
 - Test without touching the running session: start a nested one hidden on a special workspace,
   `hyprctl dispatch 'hl.dsp.exec_cmd("Hyprland -c <test.lua>", { workspace = "special:nested silent" })'`,

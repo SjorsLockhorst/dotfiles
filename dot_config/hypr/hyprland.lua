@@ -65,7 +65,9 @@ local menu        = "rofi -show drun"
 
 -- See https://wiki.hypr.land/Configuring/Basics/Autostart/
 hl.on("hyprland.start", function()
-    hl.exec_cmd("waybar & swaync & hypridle & hyprpaper")
+    -- Not swaync: D-Bus starts its unit on first use (waybar asks at once).
+    -- Starting it here too raced that, and the unit failed every login.
+    hl.exec_cmd("waybar & hypridle & hyprpaper")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
