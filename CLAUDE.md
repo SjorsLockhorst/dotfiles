@@ -237,6 +237,9 @@ Some runtime state affects behavior but is not in this repo, so it won't move wi
   services off; user units go in `run_onchange_after_enable-user-services.sh.tmpl`, and their
   package too: `alpaca-proxy` once wasn't, which stopped the whole apply). AUR-only packages (e.g.
   blueberry) go in the yay step.
+- `install-packages` passes only what `pacman -T` reports missing to `pacman -S`/`yay -S`. Never
+  `-S --needed` the whole list: that upgrades every listed package with a newer version (a partial
+  upgrade; yay rebuilds AUR ones), so each apply upgraded things. Upgrades are `yay -Syu`, by hand.
 
 ## System config (Ansible)
 - Goal: an Arch base install plus `chezmoi init --apply` gives a working machine (`test/vm/run.sh`

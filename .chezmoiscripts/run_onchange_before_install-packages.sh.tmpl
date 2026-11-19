@@ -202,22 +202,33 @@ sudo apt-get install -y {{ $backup | join " " }}
 #!/bin/bash
 set -euo pipefail
 
-sudo pacman -S --noconfirm --needed {{ $packagesArch | join " " }}
+# Only what isn't installed yet: `-S --needed` also upgrades a listed package
+# that has a newer version (in the sync database, or for yay on the AUR), so
+# every apply did a partial upgrade. Upgrading stays `yay -Syu`, by hand.
+# `pacman -T` prints the names nothing installed satisfies (provides count).
+missing() { pacman -T "$@" || true; }
+install() {
+    local pkgs
+    mapfile -t pkgs < <(missing "$@")
+    (( ${#pkgs[@]} == 0 )) || sudo pacman -S --noconfirm --needed "${pkgs[@]}"
+}
+
+install {{ $packagesArch | join " " }}
 
 {{ if .backup -}}
-sudo pacman -S --noconfirm --needed {{ $backup | join " " }}
+install {{ $backup | join " " }}
 {{ end -}}
 
 {{ if .nvim -}}
-sudo pacman -S --noconfirm --needed {{ $nvimArch | join " " }}
+install {{ $nvimArch | join " " }}
 {{ end -}}
 
 {{ if .zsh -}}
-sudo pacman -S --noconfirm --needed {{ $zsh | join " " }}
+install {{ $zsh | join " " }}
 {{ end -}}
 
 {{ if .hyprland -}}
-sudo pacman -S --noconfirm --needed {{ $hyprland | join " " }}
+install {{ $hyprland | join " " }}
 {{ end -}}
 
 # Last and not fatal: AUR sources live on third-party hosts that can be down,
@@ -225,7 +236,10 @@ sudo pacman -S --noconfirm --needed {{ $hyprland | join " " }}
 {{ $aur := $packagesAUR -}}
 {{ if .nvim }}{{ $aur = concat $aur $nvimAUR }}{{ end -}}
 {{ if .hyprland }}{{ $aur = concat $aur $hyprlandAUR }}{{ end -}}
-yay -S --noconfirm --needed {{ $aur | join " " }} \
-    || echo "WARNING: installing AUR packages failed, rerun: yay -S {{ $aur | join " " }}" >&2
+mapfile -t aur < <(missing {{ $aur | join " " }})
+if (( ${#aur[@]} )); then
+    yay -S --noconfirm --needed "${aur[@]}" \
+        || echo "WARNING: installing AUR packages failed, rerun: yay -S ${aur[*]}" >&2
+fi
 
 {{ end -}}
